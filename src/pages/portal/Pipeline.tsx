@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import type { Clinic, Rep } from '../../data/schema'
+import { clinicNeedsContact, isActionableClinic, NO_CONTACT_DAYS } from '../../data/attention'
 import { listClinics, listReps, logClinicContact } from '../../data/store'
 import { Note, Pill, SectionHeading, TableWrap, td, tdMono, th } from '../../components/ui'
 
 export function Pipeline() {
   const { currentRep } = useAuth()
+  const [searchParams] = useSearchParams()
+  const action = searchParams.get('action')
+  const staleOnly = searchParams.get('stale') === '1'
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [reps, setReps] = useState<Rep[]>([])
   const [search, setSearch] = useState('')
@@ -19,7 +24,12 @@ export function Pipeline() {
   }, [])
 
   const repById = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps])
-  const filtered = clinics.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+  const today = useMemo(() => new Date(), [])
+  const filtered = clinics.filter((c) => {
+    if (!c.name.toLowerCase().includes(search.toLowerCase())) return false
+    if (!staleOnly) return true
+    return isActionableClinic(c, currentRep?.id) && clinicNeedsContact(c, today)
+  })
 
   async function handleLogContact(clinicId: string) {
     if (!currentRep) return
@@ -49,6 +59,32 @@ export function Pipeline() {
       <div className="mt-2">
         <Note>First rep to log a touch owns the clinic. Try logging against one already owned by another rep.</Note>
       </div>
+      {action === 'log' && (
+        <div className="mt-3">
+          <Note>Use Log contact on a clinic below. First touch on an open clinic claims ownership.</Note>
+        </div>
+      )}
+      {action === 'add' && (
+        <div className="mt-3">
+          <Note>
+            Phase 1 has no separate add-clinic form — a clinic enters your book when you log the
+            first contact on an open row.
+          </Note>
+        </div>
+      )}
+      {staleOnly && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Note>
+            Showing open or owned-by-you clinics with no contact in {NO_CONTACT_DAYS} days.
+          </Note>
+          <Link
+            to="/portal/pipeline"
+            className="font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase hover:text-[var(--surface-ink)]"
+          >
+            Show all
+          </Link>
+        </div>
+      )}
 
       <input
         type="text"

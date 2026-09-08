@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import type { Product, ProductCategory, ProductStatus } from '../../data/schema'
 import { listRepProducts, upsertProduct } from '../../data/store'
@@ -51,6 +52,8 @@ const labelClass = 'block font-mono text-xs text-[var(--surface-ink-soft)]'
 
 export function ManageProducts() {
   const { currentRep } = useAuth()
+  const [searchParams] = useSearchParams()
+  const reviewOnly = searchParams.get('review') === '1'
   const [products, setProducts] = useState<Product[] | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
   const [saving, setSaving] = useState(false)
@@ -114,6 +117,18 @@ export function ManageProducts() {
       </div>
 
       {message && <p className="mt-3 font-mono text-sm text-[var(--surface-teal)]">{message}</p>}
+
+      {reviewOnly && !form && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Note>Showing products awaiting PIC review (pending_review).</Note>
+          <Link
+            to="/portal/manage-products"
+            className="font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase hover:text-[var(--surface-ink)]"
+          >
+            Show all
+          </Link>
+        </div>
+      )}
 
       {form ? (
         <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
@@ -267,29 +282,31 @@ export function ManageProducts() {
               </tr>
             </thead>
             <tbody>
-              {(products ?? []).map((p) => (
-                <tr key={p.id}>
-                  <td className={td}>{p.name}</td>
-                  <td className={td}>{p.category}</td>
-                  <td className={tdMono}>{p.concentration}</td>
-                  <td className={tdMono}>{p.price_5ml == null ? '—' : `$${p.price_5ml}`}</td>
-                  <td className={tdMono}>{p.price_10ml == null ? '—' : `$${p.price_10ml}`}</td>
-                  <td className={td}>
-                    <Pill tone={p.status === 'current' ? 'current' : p.status === 'archived' ? 'open' : 'review'}>
-                      {p.status.replace('_', ' ')}
-                    </Pill>
-                  </td>
-                  <td className={td}>
-                    <button
-                      type="button"
-                      onClick={() => setForm(toFormState(p))}
-                      className="rounded-full border border-[var(--surface-line)] px-3 py-1 text-xs"
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {(products ?? [])
+                .filter((p) => !reviewOnly || p.status === 'pending_review')
+                .map((p) => (
+                  <tr key={p.id}>
+                    <td className={td}>{p.name}</td>
+                    <td className={td}>{p.category}</td>
+                    <td className={tdMono}>{p.concentration}</td>
+                    <td className={tdMono}>{p.price_5ml == null ? '—' : `$${p.price_5ml}`}</td>
+                    <td className={tdMono}>{p.price_10ml == null ? '—' : `$${p.price_10ml}`}</td>
+                    <td className={td}>
+                      <Pill tone={p.status === 'current' ? 'current' : p.status === 'archived' ? 'open' : 'review'}>
+                        {p.status.replace('_', ' ')}
+                      </Pill>
+                    </td>
+                    <td className={td}>
+                      <button
+                        type="button"
+                        onClick={() => setForm(toFormState(p))}
+                        className="rounded-full border border-[var(--surface-line)] px-3 py-1 text-xs"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </TableWrap>

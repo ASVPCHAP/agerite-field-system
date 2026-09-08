@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { syncProductsFromSheet, type SheetSyncResult } from '../data/store'
 
-export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
+export function SyncSheetButton({
+  onSynced,
+  className = '',
+}: {
+  onSynced?: () => void
+  className?: string
+}) {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<SheetSyncResult | null>(null)
 
@@ -18,7 +24,7 @@ export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
   }
 
   return (
-    <div className="mt-2">
+    <div className={`contents ${className}`.trim()}>
       <button
         type="button"
         onClick={handleSync}
@@ -28,7 +34,7 @@ export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
         {running ? 'Importing…' : 'Import new products from Sheet'}
       </button>
       {result && (
-        <div className="mt-2 font-mono text-xs text-[var(--surface-ink-soft)]">
+        <div className="basis-full font-mono text-xs text-[var(--surface-ink-soft)]">
           {result.error ? (
             <p className="text-[var(--surface-vermilion)]">{result.error}</p>
           ) : (
