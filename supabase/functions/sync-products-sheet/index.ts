@@ -16,6 +16,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const VALID_CATEGORIES = ['peptide', 'weight-loss', 'hormone', 'topical', 'troche']
 const VALID_STATUSES = ['current', 'pending_review', 'archived']
@@ -35,7 +36,7 @@ interface SheetProduct {
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body, null, 2), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
@@ -129,7 +130,11 @@ function parseRow(row: string[], rowNumber: number): { product: SheetProduct } |
   }
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     const email = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_EMAIL')
     const privateKey = Deno.env.get('GOOGLE_PRIVATE_KEY')

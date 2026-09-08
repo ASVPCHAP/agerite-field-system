@@ -18,7 +18,8 @@ starting point — it already matches what's live in the database, so
 importing it fresh creates nothing (every row already exists). In Google
 Sheets: File → Import → Upload, choose "Insert new sheet(s)", then
 **rename that tab to `Products`** (the import looks for a tab with exactly
-that name — see step 4 if you'd rather use a different name).
+that name — see the optional `GOOGLE_SHEET_RANGE` note in step 3 if you'd
+rather use a different name).
 
 Columns, in order: `Name, Category, Concentration, Price 5mL, Price 10mL,
 Protocol Duration, Status, Rep Note`. Row 1 is headers; data starts row 2.
@@ -72,7 +73,35 @@ the JSON key or its contents into a chat with Claude. The edge function code
 is already written to read these as environment secrets; it never needs the
 raw key handed to it any other way.
 
-## 4. Test it
+## 4. Redeploy after function-code changes
+
+The portal calls this function from the browser, so the deployed function
+must answer CORS (OPTIONS + `Access-Control-Allow-*` on every response).
+After changing `supabase/functions/sync-products-sheet`, deploy that
+function only:
+
+```bash
+npx supabase login
+npx supabase functions deploy sync-products-sheet --project-ref xlboikexmfymcewfvpog
+```
+
+`--project-ref` is the linked AGErite project (`*.supabase.co` host).
+Do not pass secrets on the command line; existing dashboard secrets stay
+in place. Confirm CORS before retesting the portal:
+
+```bash
+curl -sI -X OPTIONS \
+  "https://xlboikexmfymcewfvpog.supabase.co/functions/v1/sync-products-sheet" \
+  -H "Origin: https://agerite-field-system.vercel.app" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,apikey,content-type,x-client-info"
+```
+
+The response must include `Access-Control-Allow-Origin` and
+`Access-Control-Allow-Headers`. Then sign into the portal and click
+**Import new products from Sheet**.
+
+## 5. Test it
 
 Sign into the portal and click **"Import new products from Sheet"** on the
 Dashboard. It reports how many rows were imported as new products, how many

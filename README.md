@@ -73,13 +73,13 @@ Without `.env.local`, the app falls back to a localStorage-only mock store
   exists (reported back as `alreadyExists`, not applied) — so it can never
   overwrite an edit made through the portal form above. Matches by product
   **name** (Cindy edits by name, never sees internal ids) — see
-  `products_name_key` in the schema migration. Deployed and responding
-  correctly (confirmed: it returns a clear 400 asking for its Google
-  secrets), but **not usable yet** — see `GOOGLE_SHEET_SYNC_SETUP.md` for
-  the three things only you can do (create the Sheet, create a Google
-  service account, add the secrets to Supabase). Triggered manually for
-  now via "Import new products from Sheet" on the portal Dashboard — no
-  scheduling yet, see that doc's last section.
+  `products_name_key` in the schema migration. Browser invokes need CORS
+  on the function (OPTIONS + `Access-Control-Allow-*` on every response);
+  redeploy with `npx supabase functions deploy sync-products-sheet
+  --project-ref xlboikexmfymcewfvpog` after changing the function. See
+  `GOOGLE_SHEET_SYNC_SETUP.md` for Sheet/service-account secrets and the
+  deploy command. Triggered manually via "Import new products from Sheet"
+  on the portal Dashboard — no scheduling yet, see that doc's last section.
 - `src/auth/AuthContext.tsx` — current-rep session state.
 - `src/layouts/` — `PublicLayout` (provider site nav) and `PortalLayout`
   (auth-gated, sidebar nav). Both apply `data-surface` so the same CSS
