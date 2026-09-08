@@ -10,6 +10,7 @@ import { Dashboard } from './pages/portal/Dashboard'
 import { Pipeline } from './pages/portal/Pipeline'
 import { Refills } from './pages/portal/Refills'
 import { Knowledge } from './pages/portal/Knowledge'
+import { ManageProducts } from './pages/portal/ManageProducts'
 import { Territory } from './pages/portal/Territory'
 import { Certification } from './pages/portal/Certification'
 import { States } from './pages/portal/States'
@@ -31,6 +32,7 @@ function App() {
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="refills" element={<Refills />} />
         <Route path="knowledge" element={<Knowledge />} />
+        <Route path="manage-products" element={<ManageProducts />} />
         <Route path="territory" element={<Territory />} />
         <Route path="certification" element={<Certification />} />
         <Route path="states" element={<States />} />

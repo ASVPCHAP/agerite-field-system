@@ -73,6 +73,15 @@ Without `.env.local`, the app falls back to a localStorage-only mock store
   Supabase). Triggered manually for now via the "Sync from Google Sheet"
   button on the portal Dashboard — no scheduling yet, see that doc's last
   section.
+- `src/pages/portal/ManageProducts.tsx` — a structured form for editing
+  products directly in the portal, as an alternative to the Sheet for
+  whoever's maintaining the data (Cindy or otherwise). Calls the same
+  `upsert_product()` diff/change-log logic the Sheet sync uses (see the
+  `phase1_6_upsert_product` migration), so an edit made here and one made
+  in the Sheet are indistinguishable in `product_change_log` — both just
+  show up as "changed by X." An edit here does not write back to the
+  Sheet — the two are independent ways to reach the same table, not
+  synced with each other.
 - `src/auth/AuthContext.tsx` — current-rep session state.
 - `src/layouts/` — `PublicLayout` (provider site nav) and `PortalLayout`
   (auth-gated, sidebar nav). Both apply `data-surface` so the same CSS

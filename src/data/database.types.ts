@@ -389,6 +389,35 @@ export type Database = {
           total: number
         }[]
       }
+      slugify: { Args: { input: string }; Returns: string }
+      upsert_product: {
+        Args: {
+          p_id: string | null
+          p_name: string
+          p_category: string
+          p_concentration: string
+          p_price_5ml: number | null
+          p_price_10ml: number | null
+          p_protocol_duration: string
+          p_status: string
+          p_rep_note: string | null
+          p_changed_by: string
+        }
+        Returns: {
+          id: string
+          name: string
+          category: string
+          concentration: string
+          price_5ml: number | null
+          price_10ml: number | null
+          protocol_duration: string
+          rep_note: string | null
+          status: string
+          version: number
+          reviewed_by: string | null
+          reviewed_at: string | null
+        }
+      }
     }
     Enums: {
       [_ in never]: never

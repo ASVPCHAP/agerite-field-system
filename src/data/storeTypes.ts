@@ -17,3 +17,17 @@ export interface SheetSyncResult {
   total_rows_read?: number
   error?: string
 }
+
+/** Input for the "Manage Products" form. A null/omitted id creates a new
+ *  product; an existing id edits it. Mirrors upsert_product's parameters. */
+export interface ProductFormInput {
+  id?: string | null
+  name: string
+  category: Product['category']
+  concentration: string
+  price_5ml: number | null
+  price_10ml: number | null
+  protocol_duration: string
+  status: Product['status']
+  rep_note: string | null
+}

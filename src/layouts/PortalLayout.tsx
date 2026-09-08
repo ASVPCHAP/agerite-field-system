@@ -8,6 +8,7 @@ const navItems = [
   { to: '/portal/pipeline', label: 'Pipeline' },
   { to: '/portal/refills', label: 'Refills' },
   { to: '/portal/knowledge', label: 'Knowledge base' },
+  { to: '/portal/manage-products', label: 'Manage products' },
   { to: '/portal/territory', label: 'Territory & contacts' },
   { to: '/portal/certification', label: 'Certification' },
   { to: '/portal/states', label: 'Licensed states' },

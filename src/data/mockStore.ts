@@ -28,7 +28,7 @@ import {
   seedProducts,
   seedReps,
 } from './seed'
-import type { LogContactResult, PublicProduct, SheetSyncResult } from './storeTypes'
+import type { LogContactResult, ProductFormInput, PublicProduct, SheetSyncResult } from './storeTypes'
 
 const STORAGE_KEY = 'agerite_field_system_db_v1'
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -165,6 +165,77 @@ export async function listPendingReview(): Promise<Product[]> {
 
 export async function listProductChangeLog(): Promise<ProductChangeLog[]> {
   return structuredClone(db.productChangeLog).sort((a, b) => (a.changed_at < b.changed_at ? 1 : -1))
+}
+
+function slugify(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+/** "Manage Products" form target — same diff/change-log behavior as the
+ *  Sheet sync and the real upsert_product() Postgres function, so mock mode
+ *  behaves identically to the real backend. */
+export async function upsertProduct(input: ProductFormInput, changedBy: string): Promise<Product> {
+  const today = isoDate(new Date())
+  const existing = input.id ? db.products.find((p) => p.id === input.id) : undefined
+
+  if (!existing) {
+    let id = slugify(input.name) || 'product'
+    let suffix = 2
+    while (db.products.some((p) => p.id === id)) {
+      id = `${slugify(input.name) || 'product'}-${suffix}`
+      suffix += 1
+    }
+    const product: Product = {
+      id,
+      name: input.name,
+      category: input.category,
+      concentration: input.concentration,
+      price_5ml: input.price_5ml,
+      price_10ml: input.price_10ml,
+      protocol_duration: input.protocol_duration,
+      rep_note: input.rep_note,
+      status: input.status || 'current',
+      version: 1,
+      reviewed_by: changedBy,
+      reviewed_at: today,
+    }
+    db.products.push(product)
+    persist()
+    return structuredClone(product)
+  }
+
+  const fields: [keyof Product, string | number | null][] = [
+    ['name', input.name],
+    ['category', input.category],
+    ['concentration', input.concentration],
+    ['price_5ml', input.price_5ml],
+    ['price_10ml', input.price_10ml],
+    ['protocol_duration', input.protocol_duration],
+    ['status', input.status || 'current'],
+    ['rep_note', input.rep_note],
+  ]
+  for (const [field, newVal] of fields) {
+    const oldVal = existing[field] as string | number | null
+    if ((oldVal ?? null) !== (newVal ?? null)) {
+      const fmt = (v: string | number | null) =>
+        field === 'price_5ml' || field === 'price_10ml' ? (v == null ? '' : `$${v}`) : String(v ?? '')
+      db.productChangeLog.push({
+        id: `cl-${existing.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        product_id: existing.id,
+        field_changed: field,
+        old_value: fmt(oldVal),
+        new_value: fmt(newVal),
+        changed_by: changedBy,
+        changed_at: today,
+      })
+      ;(existing as unknown as Record<string, unknown>)[field] = newVal
+    }
+  }
+  existing.version += 1
+  existing.reviewed_by = changedBy
+  existing.reviewed_at = today
+  persist()
+  return structuredClone(existing)
 }
 
 // ---------------------------------------------------------------------------

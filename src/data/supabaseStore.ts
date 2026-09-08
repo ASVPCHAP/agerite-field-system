@@ -21,7 +21,7 @@ import type {
   RefillWithStatus,
   Rep,
 } from './schema'
-import type { PublicProduct, LogContactResult, SheetSyncResult } from './storeTypes'
+import type { PublicProduct, LogContactResult, ProductFormInput, SheetSyncResult } from './storeTypes'
 import { supabase } from './supabaseClient'
 
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -123,6 +123,26 @@ export async function listProductChangeLog(): Promise<ProductChangeLog[]> {
   const { data, error } = await db().from('product_change_log').select('*').order('changed_at', { ascending: false })
   if (error) throw error
   return data
+}
+
+/** "Manage Products" form target — calls the same upsert_product() Postgres
+ *  function used everywhere a product gets written, so the diff/change-log
+ *  behavior is identical to the Sheet sync. */
+export async function upsertProduct(input: ProductFormInput, changedBy: string): Promise<Product> {
+  const { data, error } = await db().rpc('upsert_product', {
+    p_id: input.id ?? null,
+    p_name: input.name,
+    p_category: input.category,
+    p_concentration: input.concentration,
+    p_price_5ml: input.price_5ml,
+    p_price_10ml: input.price_10ml,
+    p_protocol_duration: input.protocol_duration,
+    p_status: input.status,
+    p_rep_note: input.rep_note,
+    p_changed_by: changedBy,
+  })
+  if (error) throw error
+  return data as unknown as Product
 }
 
 // ---------------------------------------------------------------------------
