@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { Clinic, Product, RefillStatus, RefillWithStatus } from '../../data/schema'
 import { listClinics, listRefills, listRepProducts } from '../../data/store'
-import { Pill, SectionHeading, StatTile, TableWrap, td, tdMono, th } from '../../components/ui'
+import { Note, Pill, SectionHeading, StatTile, TableWrap, td, tdMono, th } from '../../components/ui'
 
 const statusTone: Record<RefillStatus, 'current' | 'review' | 'fail'> = {
   on_protocol: 'current',
@@ -11,6 +12,8 @@ const statusTone: Record<RefillStatus, 'current' | 'review' | 'fail'> = {
 }
 
 export function Refills() {
+  const [searchParams] = useSearchParams()
+  const statusFilter = searchParams.get('status')
   const [refills, setRefills] = useState<RefillWithStatus[]>([])
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -30,6 +33,19 @@ export function Refills() {
     { on_protocol: 0, due_soon: 0, due: 0, lapsed: 0 } as Record<RefillStatus, number>,
   )
 
+  const visible = refills.filter((r) => {
+    if (statusFilter === 'lapsed') return r.status === 'lapsed'
+    if (statusFilter === 'due') return r.status === 'due' || r.status === 'due_soon'
+    return true
+  })
+
+  const filterNote =
+    statusFilter === 'lapsed'
+      ? 'Showing lapsed refills only.'
+      : statusFilter === 'due'
+        ? 'Showing due and due-soon refills.'
+        : null
+
   return (
     <div>
       <SectionHeading>Refills</SectionHeading>
@@ -39,6 +55,18 @@ export function Refills() {
         <StatTile value={counts.lapsed} label="Lapsed" />
         <StatTile value={counts.on_protocol} label="On protocol" />
       </div>
+
+      {filterNote && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <Note>{filterNote}</Note>
+          <Link
+            to="/portal/refills"
+            className="font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase hover:text-[var(--surface-ink)]"
+          >
+            Show all
+          </Link>
+        </div>
+      )}
 
       <TableWrap>
         <table className="w-full text-sm">
@@ -53,7 +81,7 @@ export function Refills() {
             </tr>
           </thead>
           <tbody>
-            {refills.map((r) => (
+            {visible.map((r) => (
               <tr key={r.id}>
                 <td className={tdMono}>{r.patient_ref}</td>
                 <td className={td}>{clinicById.get(r.clinic_id)?.name ?? '—'}</td>

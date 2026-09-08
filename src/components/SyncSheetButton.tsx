@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { syncProductsFromSheet, type SheetSyncResult } from '../data/store'
 
-export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
+export function SyncSheetButton({
+  onSynced,
+  className = '',
+}: {
+  onSynced?: () => void
+  className?: string
+}) {
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<SheetSyncResult | null>(null)
 
@@ -18,7 +24,7 @@ export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
   }
 
   return (
-    <div className="mt-2">
+    <div className={className}>
       <button
         type="button"
         onClick={handleSync}
