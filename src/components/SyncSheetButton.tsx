@@ -25,7 +25,7 @@ export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
         disabled={running}
         className="rounded-full border border-[var(--surface-line)] px-4 py-1.5 text-sm disabled:opacity-60"
       >
-        {running ? 'Syncing…' : 'Sync from Google Sheet'}
+        {running ? 'Importing…' : 'Import new products from Sheet'}
       </button>
       {result && (
         <div className="mt-2 font-mono text-xs text-[var(--surface-ink-soft)]">
@@ -33,17 +33,15 @@ export function SyncSheetButton({ onSynced }: { onSynced?: () => void }) {
             <p className="text-[var(--surface-vermilion)]">{result.error}</p>
           ) : (
             <p>
-              {result.created.length} created, {result.updated.length} updated, {result.unchanged}{' '}
-              unchanged
+              {result.created.length} imported, {result.alreadyExists.length} already existed (edit
+              those in Manage Products instead)
               {result.skipped.length > 0 && `, ${result.skipped.length} skipped`}
             </p>
           )}
-          {result.updated.length > 0 && (
+          {result.created.length > 0 && (
             <ul className="mt-1 list-disc pl-4">
-              {result.updated.map((u) => (
-                <li key={u.name}>
-                  {u.name}: {u.fields.join(', ')}
-                </li>
+              {result.created.map((name) => (
+                <li key={name}>{name}</li>
               ))}
             </ul>
           )}

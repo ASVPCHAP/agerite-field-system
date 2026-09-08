@@ -9,10 +9,14 @@ export type LogContactResult =
   | { ok: true; clinic: Clinic }
   | { ok: false; reason: 'owned_by_other'; ownerName: string; since: string | null }
 
+/** Import-only: the Sheet sync creates new products by name and never
+ *  touches an existing one — the "Manage Products" form is the only way
+ *  to edit a product once it exists. `alreadyExists` names rows the sync
+ *  saw but left untouched because a product with that name is already in
+ *  the database. */
 export interface SheetSyncResult {
   created: string[]
-  updated: { name: string; fields: string[] }[]
-  unchanged: number
+  alreadyExists: string[]
   skipped: string[]
   total_rows_read?: number
   error?: string

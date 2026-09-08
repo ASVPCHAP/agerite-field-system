@@ -60,28 +60,26 @@ Without `.env.local`, the app falls back to a localStorage-only mock store
     could just read them off the network tab.
 - `src/data/mockStore.ts` — the original localStorage-only implementation,
   kept as the fallback for anyone running this without a Supabase project.
+- `src/pages/portal/ManageProducts.tsx` — the **authoritative** way to edit
+  a product. A structured form (dropdowns for category/status, number
+  fields for price) that calls `upsert_product()` — matches by id, diffs
+  every field against the existing row, and writes each change to
+  `product_change_log`. A blank id creates a new product with a generated
+  slug id (see `phase1_6_upsert_product` migration).
 - `supabase/functions/sync-products-sheet/` — the Google Sheet sync (Phase
-  1.5, run ahead of schedule since it was asked for directly). A Supabase
-  Edge Function that authenticates as a Google service account, reads the
-  Sheet, and diffs/upserts into `products`, writing every field change to
-  `product_change_log`. Matches rows by product **name** (Cindy edits by
-  name, never sees internal ids) — see `products_name_key` in the schema
-  migration. Deployed and responding correctly (confirmed: it returns a
-  clear 400 asking for its Google secrets), but **not usable yet** — see
-  `GOOGLE_SHEET_SYNC_SETUP.md` for the three things only you can do
-  (create the Sheet, create a Google service account, add the secrets to
-  Supabase). Triggered manually for now via the "Sync from Google Sheet"
-  button on the portal Dashboard — no scheduling yet, see that doc's last
-  section.
-- `src/pages/portal/ManageProducts.tsx` — a structured form for editing
-  products directly in the portal, as an alternative to the Sheet for
-  whoever's maintaining the data (Cindy or otherwise). Calls the same
-  `upsert_product()` diff/change-log logic the Sheet sync uses (see the
-  `phase1_6_upsert_product` migration), so an edit made here and one made
-  in the Sheet are indistinguishable in `product_change_log` — both just
-  show up as "changed by X." An edit here does not write back to the
-  Sheet — the two are independent ways to reach the same table, not
-  synced with each other.
+  1.5, run ahead of schedule since it was asked for directly), now
+  **import-only**: it creates a product from a Sheet row whose name isn't
+  in the database yet, and does nothing to a row whose name already
+  exists (reported back as `alreadyExists`, not applied) — so it can never
+  overwrite an edit made through the portal form above. Matches by product
+  **name** (Cindy edits by name, never sees internal ids) — see
+  `products_name_key` in the schema migration. Deployed and responding
+  correctly (confirmed: it returns a clear 400 asking for its Google
+  secrets), but **not usable yet** — see `GOOGLE_SHEET_SYNC_SETUP.md` for
+  the three things only you can do (create the Sheet, create a Google
+  service account, add the secrets to Supabase). Triggered manually for
+  now via "Import new products from Sheet" on the portal Dashboard — no
+  scheduling yet, see that doc's last section.
 - `src/auth/AuthContext.tsx` — current-rep session state.
 - `src/layouts/` — `PublicLayout` (provider site nav) and `PortalLayout`
   (auth-gated, sidebar nav). Both apply `data-surface` so the same CSS

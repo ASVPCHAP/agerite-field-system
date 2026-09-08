@@ -289,7 +289,7 @@ export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
       const body = await context.json().catch(() => null)
       if (body?.error) message = body.error
     }
-    return { created: [], updated: [], unchanged: 0, skipped: [], error: message }
+    return { created: [], alreadyExists: [], skipped: [], error: message }
   }
   return data
 }

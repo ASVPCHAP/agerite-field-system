@@ -1,8 +1,12 @@
-// Phase 1.5 — pulls the Google Sheet (Cindy's source of truth) into the
-// products table. One-way sync, Sheet -> Postgres, matched by product name
-// (not our internal id — Cindy edits by name, never sees ids). Every field
-// change is diffed and written to product_change_log; a brand-new product
-// name gets a slug id and no change-log rows (nothing to diff against yet).
+// Phase 1.5 — imports new rows from the Google Sheet into the products
+// table. Import-only, by design: the portal's "Manage Products" form
+// (upsert_product()) is the authoritative way to edit an existing product,
+// so this function never touches a product that's already in the
+// database — it only creates ones that aren't there yet, matched by name.
+// A sheet row whose name already exists is reported, not applied, so
+// re-running the sync after Cindy edits a value she's already imported is
+// a safe no-op rather than a silent overwrite of whatever the portal form
+// has since changed.
 //
 // Required secrets (set via `supabase secrets set` or the dashboard —
 // never commit these): GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY,
@@ -15,7 +19,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const VALID_CATEGORIES = ['peptide', 'weight-loss', 'hormone', 'topical', 'troche']
 const VALID_STATUSES = ['current', 'pending_review', 'archived']
-const SYNC_ACTOR = 'Cindy R., PIC (Sheet sync)'
+const IMPORT_ACTOR = 'Sheet import'
 
 interface SheetProduct {
   name: string
@@ -147,15 +151,15 @@ Deno.serve(async (_req: Request) => {
     const accessToken = await getGoogleAccessToken(email, privateKey, 'https://www.googleapis.com/auth/spreadsheets.readonly')
     const rawRows = await fetchSheetRows(accessToken, sheetId, range)
 
-    const { data: existingProducts, error: fetchError } = await supabase.from('products').select('*')
+    const { data: existingProducts, error: fetchError } = await supabase.from('products').select('id, name')
     if (fetchError) throw fetchError
-    const byName = new Map(existingProducts!.map((p) => [p.name.toLowerCase(), p]))
+    const existingNames = new Set(existingProducts!.map((p) => p.name.toLowerCase()))
     const existingIds = new Set(existingProducts!.map((p) => p.id))
 
     const created: string[] = []
-    const updated: { name: string; fields: string[] }[] = []
+    const alreadyExists: string[] = []
     const skipped: string[] = []
-    let unchanged = 0
+    const today = new Date().toISOString().slice(0, 10)
 
     for (let i = 0; i < rawRows.length; i++) {
       const rowNumber = i + 2 // sheet row, accounting for the header row
@@ -165,86 +169,36 @@ Deno.serve(async (_req: Request) => {
         continue
       }
       const sheetProduct = parsed.product
-      const existing = byName.get(sheetProduct.name.toLowerCase())
-      const today = new Date().toISOString().slice(0, 10)
 
-      if (!existing) {
-        let id = slugify(sheetProduct.name)
-        let suffix = 2
-        while (existingIds.has(id)) {
-          id = `${slugify(sheetProduct.name)}-${suffix}`
-          suffix += 1
-        }
-        existingIds.add(id)
-
-        const { error: insertError } = await supabase.from('products').insert({
-          id,
-          ...sheetProduct,
-          version: 1,
-          reviewed_by: SYNC_ACTOR,
-          reviewed_at: today,
-        })
-        if (insertError) {
-          skipped.push(`row ${rowNumber} (${sheetProduct.name}): ${insertError.message}`)
-          continue
-        }
-        created.push(sheetProduct.name)
+      if (existingNames.has(sheetProduct.name.toLowerCase())) {
+        alreadyExists.push(sheetProduct.name)
         continue
       }
 
-      const fieldChecks: [keyof SheetProduct, string][] = [
-        ['category', 'category'],
-        ['concentration', 'concentration'],
-        ['protocol_duration', 'protocol_duration'],
-        ['status', 'status'],
-        ['rep_note', 'rep_note'],
-      ]
-      const changes: { field: string; old_value: string; new_value: string }[] = []
-      for (const [key] of fieldChecks) {
-        const oldVal = existing[key as string]
-        const newVal = sheetProduct[key]
-        if ((oldVal ?? null) !== (newVal ?? null)) {
-          changes.push({ field: key, old_value: String(oldVal ?? ''), new_value: String(newVal ?? '') })
-        }
+      let id = slugify(sheetProduct.name)
+      let suffix = 2
+      while (existingIds.has(id)) {
+        id = `${slugify(sheetProduct.name)}-${suffix}`
+        suffix += 1
       }
-      for (const priceField of ['price_5ml', 'price_10ml'] as const) {
-        const oldVal = existing[priceField]
-        const newVal = sheetProduct[priceField]
-        if (Number(oldVal ?? NaN) !== Number(newVal ?? NaN) && !(oldVal == null && newVal == null)) {
-          changes.push({ field: priceField, old_value: oldVal == null ? '' : `$${oldVal}`, new_value: newVal == null ? '' : `$${newVal}` })
-        }
-      }
+      existingIds.add(id)
+      existingNames.add(sheetProduct.name.toLowerCase())
 
-      if (changes.length === 0) {
-        unchanged += 1
+      const { error: insertError } = await supabase.from('products').insert({
+        id,
+        ...sheetProduct,
+        version: 1,
+        reviewed_by: IMPORT_ACTOR,
+        reviewed_at: today,
+      })
+      if (insertError) {
+        skipped.push(`row ${rowNumber} (${sheetProduct.name}): ${insertError.message}`)
         continue
       }
-
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ ...sheetProduct, version: existing.version + 1, reviewed_by: SYNC_ACTOR, reviewed_at: today })
-        .eq('id', existing.id)
-      if (updateError) {
-        skipped.push(`row ${rowNumber} (${sheetProduct.name}): ${updateError.message}`)
-        continue
-      }
-
-      const logRows = changes.map((c) => ({
-        id: `cl-${existing.id}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        product_id: existing.id,
-        field_changed: c.field,
-        old_value: c.old_value,
-        new_value: c.new_value,
-        changed_by: SYNC_ACTOR,
-        changed_at: today,
-      }))
-      const { error: logError } = await supabase.from('product_change_log').insert(logRows)
-      if (logError) skipped.push(`row ${rowNumber} (${sheetProduct.name}): updated but change-log insert failed: ${logError.message}`)
-
-      updated.push({ name: sheetProduct.name, fields: changes.map((c) => c.field) })
+      created.push(sheetProduct.name)
     }
 
-    return jsonResponse({ created, updated, unchanged, skipped, total_rows_read: rawRows.length })
+    return jsonResponse({ created, alreadyExists, skipped, total_rows_read: rawRows.length })
   } catch (err) {
     return jsonResponse({ error: err instanceof Error ? err.message : String(err) }, 500)
   }

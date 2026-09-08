@@ -361,8 +361,7 @@ export async function submitCertificationAttempt(
 export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
   return {
     created: [],
-    updated: [],
-    unchanged: 0,
+    alreadyExists: [],
     skipped: [],
     error: 'Sheet sync requires the real Supabase backend — not available in mock mode.',
   }
