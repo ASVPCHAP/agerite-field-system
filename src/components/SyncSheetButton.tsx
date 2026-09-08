@@ -24,7 +24,7 @@ export function SyncSheetButton({
   }
 
   return (
-    <div className={className}>
+    <div className={`contents ${className}`.trim()}>
       <button
         type="button"
         onClick={handleSync}
@@ -34,7 +34,7 @@ export function SyncSheetButton({
         {running ? 'Importing…' : 'Import new products from Sheet'}
       </button>
       {result && (
-        <div className="mt-2 font-mono text-xs text-[var(--surface-ink-soft)]">
+        <div className="basis-full font-mono text-xs text-[var(--surface-ink-soft)]">
           {result.error ? (
             <p className="text-[var(--surface-vermilion)]">{result.error}</p>
           ) : (
