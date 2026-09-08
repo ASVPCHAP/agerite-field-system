@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext'
 import type { Clinic, Product, ProductChangeLog } from '../../data/schema'
 import { listClinics, listProductChangeLog, listRefills, listRepProducts } from '../../data/store'
 import { SectionHeading, StatTile, TableWrap, td, tdMono, th } from '../../components/ui'
+import { SyncSheetButton } from '../../components/SyncSheetButton'
 
 export function Dashboard() {
   const { currentRep } = useAuth()
@@ -12,7 +13,7 @@ export function Dashboard() {
   const [log, setLog] = useState<ProductChangeLog[] | null>(null)
   const [products, setProducts] = useState<Product[]>([])
 
-  useEffect(() => {
+  function refresh() {
     listClinics().then(setClinics)
     listProductChangeLog().then(setLog)
     listRepProducts().then(setProducts)
@@ -21,7 +22,9 @@ export function Dashboard() {
       setDueSoonCount(refills.filter((r) => r.status === 'due' || r.status === 'due_soon').length)
       setLapsedCount(refills.filter((r) => r.status === 'lapsed').length)
     })
-  }, [])
+  }
+
+  useEffect(refresh, [])
 
   const productById = new Map(products.map((p) => [p.id, p]))
   const ownedByYou = (clinics ?? []).filter((c) => c.owner_rep_id === currentRep?.id).length
@@ -36,7 +39,10 @@ export function Dashboard() {
         <StatTile value={lapsedCount} label="Lapsed refills" />
       </div>
 
-      <h3 className="mt-10 mb-2 font-display text-lg font-semibold">What changed</h3>
+      <div className="mt-10 flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold">What changed</h3>
+        <SyncSheetButton onSynced={refresh} />
+      </div>
       <TableWrap>
         <table className="w-full text-sm">
           <thead>

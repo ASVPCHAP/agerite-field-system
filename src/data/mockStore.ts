@@ -28,7 +28,7 @@ import {
   seedProducts,
   seedReps,
 } from './seed'
-import type { LogContactResult, PublicProduct } from './storeTypes'
+import type { LogContactResult, PublicProduct, SheetSyncResult } from './storeTypes'
 
 const STORAGE_KEY = 'agerite_field_system_db_v1'
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -280,4 +280,19 @@ export async function submitCertificationAttempt(
   rep.cert_status = passed ? 'certified' : 'in_progress'
   persist()
   return structuredClone(attempt)
+}
+
+// ---------------------------------------------------------------------------
+// Google Sheet sync (Phase 1.5) — no-op in mock mode; the sync runs as a
+// Supabase Edge Function, so it only exists once a real project is wired up.
+// ---------------------------------------------------------------------------
+
+export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
+  return {
+    created: [],
+    updated: [],
+    unchanged: 0,
+    skipped: [],
+    error: 'Sheet sync requires the real Supabase backend — not available in mock mode.',
+  }
 }

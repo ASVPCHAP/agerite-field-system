@@ -21,7 +21,7 @@ import type {
   RefillWithStatus,
   Rep,
 } from './schema'
-import type { PublicProduct, LogContactResult } from './storeTypes'
+import type { PublicProduct, LogContactResult, SheetSyncResult } from './storeTypes'
 import { supabase } from './supabaseClient'
 
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -247,4 +247,29 @@ export async function resetDemoData(): Promise<void> {
   } catch {
     /* ignore */
   }
+}
+
+// ---------------------------------------------------------------------------
+// Google Sheet sync (Phase 1.5) — invokes the sync-products-sheet Edge
+// Function, which reads the Sheet via a Google service account and does the
+// actual diff/upsert into products + product_change_log. See
+// supabase/functions/sync-products-sheet for the real logic; this is just
+// the client-side trigger.
+// ---------------------------------------------------------------------------
+
+export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
+  const { data, error } = await db().functions.invoke<SheetSyncResult>('sync-products-sheet')
+  if (error || !data) {
+    // The function returns a descriptive JSON body even on 4xx/5xx (e.g.
+    // "missing Google secrets"), but supabase-js's FunctionsHttpError only
+    // carries the raw Response on `context` — the real message is in there.
+    let message = error?.message ?? 'No response from sync function'
+    const context = (error as { context?: unknown } | null)?.context
+    if (context instanceof Response) {
+      const body = await context.json().catch(() => null)
+      if (body?.error) message = body.error
+    }
+    return { created: [], updated: [], unchanged: 0, skipped: [], error: message }
+  }
+  return data
 }

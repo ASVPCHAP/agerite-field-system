@@ -6,8 +6,8 @@ CSS v4, backed by a real Supabase Postgres project.
 
 ## Status
 
-Real database, mock-only around its edges where the spec explicitly defers
-that work: no Google Sheet sync yet (Phase 1.5, per spec), no PHI fields
+Real database, real Google Sheet sync (built, not yet turned on — see
+below), mock-only where the spec explicitly still defers work: no PHI fields
 anywhere in the schema, and no real per-rep Supabase Auth session yet — login
 is a "pick a rep" stand-in for magic-link, reading real rows from the `reps`
 table. See "Known gap" below for exactly what that means and what closes it.
@@ -60,6 +60,19 @@ Without `.env.local`, the app falls back to a localStorage-only mock store
     could just read them off the network tab.
 - `src/data/mockStore.ts` — the original localStorage-only implementation,
   kept as the fallback for anyone running this without a Supabase project.
+- `supabase/functions/sync-products-sheet/` — the Google Sheet sync (Phase
+  1.5, run ahead of schedule since it was asked for directly). A Supabase
+  Edge Function that authenticates as a Google service account, reads the
+  Sheet, and diffs/upserts into `products`, writing every field change to
+  `product_change_log`. Matches rows by product **name** (Cindy edits by
+  name, never sees internal ids) — see `products_name_key` in the schema
+  migration. Deployed and responding correctly (confirmed: it returns a
+  clear 400 asking for its Google secrets), but **not usable yet** — see
+  `GOOGLE_SHEET_SYNC_SETUP.md` for the three things only you can do
+  (create the Sheet, create a Google service account, add the secrets to
+  Supabase). Triggered manually for now via the "Sync from Google Sheet"
+  button on the portal Dashboard — no scheduling yet, see that doc's last
+  section.
 - `src/auth/AuthContext.tsx` — current-rep session state.
 - `src/layouts/` — `PublicLayout` (provider site nav) and `PortalLayout`
   (auth-gated, sidebar nav). Both apply `data-surface` so the same CSS
@@ -111,6 +124,7 @@ portal nav, verified end to end against the live Supabase project.
 
 ## Not yet built (explicitly out of scope for Phase 1, per spec section 8)
 
-Telehealth/membership platform, real Google Sheet sync, real production
-auth/SSO, commission reconciliation, any patient-identifying data field,
-CBD/MSO/association material.
+Telehealth/membership platform, real production auth/SSO, commission
+reconciliation, any patient-identifying data field, CBD/MSO/association
+material. (Google Sheet sync *is* now built — see above — it was originally
+on this list as a Phase 1.5 item but got pulled forward on request.)
