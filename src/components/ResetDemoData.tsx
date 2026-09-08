@@ -4,9 +4,9 @@ export function ResetDemoData() {
   return (
     <button
       type="button"
-      onClick={() => {
+      onClick={async () => {
         if (confirm('Reset all demo data (ownership locks, cert progress) back to seed state?')) {
-          resetDemoData()
+          await resetDemoData()
           location.reload()
         }
       }}
