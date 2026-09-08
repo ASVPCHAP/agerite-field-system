@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Design tokens — APPROXIMATE "Clinical Editorial" reconstruction.
+   Swap for the real agerite-concept-site.html values before this
+   goes in front of the client. Kept in one place so that swap is
+   a find-and-replace, not a rewrite.
+
+   Plain CSS custom properties (not Tailwind @theme colors) so the
+   same components can read them via arbitrary-value utilities
+   (e.g. bg-(--surface-bg)) and swap palette per [data-surface],
+   the same trick the hidden prototype used.
+   ============================================================ */
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+:root {
+  --surface-bg: #faf6ee;
+  --surface-bg-2: #ffffff;
+  --surface-ink: #20221f;
+  --surface-ink-soft: #5a5d57;
+  --surface-line: #ddd4c0;
+  --surface-teal: #2f6b66;
+  --surface-vermilion: #c1502e;
+  --surface-gold: #b8862f;
+}
+
+[data-surface='portal'] {
+  --surface-bg: #14171a;
+  --surface-bg-2: #1c2024;
+  --surface-ink: #eef0ee;
+  --surface-ink-soft: #9aa39e;
+  --surface-line: #2c3136;
+  --surface-teal: #4fb3aa;
+  --surface-vermilion: #e2765a;
+  --surface-gold: #e0b85a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
