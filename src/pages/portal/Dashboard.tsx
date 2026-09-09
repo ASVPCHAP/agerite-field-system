@@ -38,7 +38,7 @@ const CERT_CHIP: Record<CertStatus, { label: string; tone: 'pass' | 'review' | '
 }
 
 const actionClass =
-  'inline-flex items-center rounded-full border border-[var(--surface-line)] px-4 py-1.5 text-sm'
+  'inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-4 py-2 text-sm'
 
 export function Dashboard() {
   const { currentRep } = useAuth()
@@ -87,7 +87,7 @@ export function Dashboard() {
   const cert = currentRep ? CERT_CHIP[currentRep.cert_status] : null
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionHeading>Dashboard</SectionHeading>
         {cert && (

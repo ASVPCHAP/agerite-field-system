@@ -7,11 +7,11 @@ export function SurfaceToggle({ active }: { active: 'public' | 'portal' }) {
   const navigate = useNavigate()
 
   return (
-    <div className="fixed right-6 bottom-6 z-30 flex overflow-hidden rounded-full border border-[var(--surface-line)] bg-[var(--surface-bg-2)] shadow-sm">
+    <div className="fixed right-3 bottom-3 z-30 flex max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-full border border-[var(--surface-line)] bg-[var(--surface-bg-2)] shadow-sm md:right-6 md:bottom-6">
       <button
         type="button"
         onClick={() => navigate('/')}
-        className={`px-4 py-2 text-sm transition-colors ${
+        className={`px-3 py-2.5 text-xs transition-colors sm:px-4 sm:text-sm ${
           active === 'public'
             ? 'bg-[var(--surface-teal)] text-white'
             : 'text-[var(--surface-ink-soft)]'
@@ -22,7 +22,7 @@ export function SurfaceToggle({ active }: { active: 'public' | 'portal' }) {
       <button
         type="button"
         onClick={() => navigate('/portal')}
-        className={`px-4 py-2 text-sm transition-colors ${
+        className={`px-3 py-2.5 text-xs transition-colors sm:px-4 sm:text-sm ${
           active === 'portal'
             ? 'bg-[var(--surface-teal)] text-white'
             : 'text-[var(--surface-ink-soft)]'

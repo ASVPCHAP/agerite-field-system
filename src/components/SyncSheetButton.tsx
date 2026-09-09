@@ -29,7 +29,7 @@ export function SyncSheetButton({
         type="button"
         onClick={handleSync}
         disabled={running}
-        className="rounded-full border border-[var(--surface-line)] px-4 py-1.5 text-sm disabled:opacity-60"
+        className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-4 py-2 text-sm disabled:opacity-60"
       >
         {running ? 'Importing…' : 'Import new products from Sheet'}
       </button>
