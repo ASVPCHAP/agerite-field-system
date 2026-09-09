@@ -43,6 +43,11 @@ html,
 body,
 #root {
   height: 100%;
+  max-width: 100%;
+}
+
+html {
+  overflow-x: clip;
 }
 
 body {

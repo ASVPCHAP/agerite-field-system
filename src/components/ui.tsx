@@ -55,7 +55,11 @@ export function Note({ children }: { children: ReactNode }) {
 }
 
 export function TableWrap({ children }: { children: ReactNode }) {
-  return <div className="overflow-x-auto">{children}</div>
+  return (
+    <div className="max-w-full min-w-0 overflow-x-auto overscroll-x-contain">
+      {children}
+    </div>
+  )
 }
 
 export const th = 'border-b border-[var(--surface-ink)] px-2 py-2 text-left font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase'

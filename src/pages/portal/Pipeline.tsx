@@ -91,7 +91,7 @@ export function Pipeline() {
         placeholder="Search clinics…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mt-4 max-w-xs rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-1.5 text-sm"
+        className="mt-4 w-full max-w-xs rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-2 text-sm"
       />
 
       <TableWrap>
@@ -126,7 +126,7 @@ export function Pipeline() {
                     <button
                       type="button"
                       onClick={() => handleLogContact(c.id)}
-                      className="rounded-full border border-[var(--surface-line)] px-3 py-1 text-xs"
+                      className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
                     >
                       Log contact
                     </button>
