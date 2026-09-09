@@ -294,6 +294,7 @@ export type Database = {
           hire_date: string
           id: string
           name: string
+          role: string
           territory: string
         }
         Insert: {
@@ -302,6 +303,7 @@ export type Database = {
           hire_date: string
           id: string
           name: string
+          role?: string
           territory: string
         }
         Update: {
@@ -310,6 +312,7 @@ export type Database = {
           hire_date?: string
           id?: string
           name?: string
+          role?: string
           territory?: string
         }
         Relationships: []
@@ -331,6 +334,34 @@ export type Database = {
           under_review: boolean | null
           version: number | null
         }
+        Insert: {
+          category?: string | null
+          concentration?: never
+          id?: string | null
+          name?: string | null
+          price_10ml?: never
+          price_5ml?: never
+          protocol_duration?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          under_review?: never
+          version?: number | null
+        }
+        Update: {
+          category?: string | null
+          concentration?: never
+          id?: string | null
+          name?: string | null
+          price_10ml?: never
+          price_5ml?: never
+          protocol_duration?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          under_review?: never
+          version?: number | null
+        }
         Relationships: []
       }
       refills_with_status: {
@@ -343,6 +374,26 @@ export type Database = {
           runs_out_at: string | null
           started_at: string | null
           status: string | null
+        }
+        Insert: {
+          clinic_id?: string | null
+          id?: string | null
+          patient_ref?: string | null
+          product_id?: string | null
+          protocol_weeks?: number | null
+          runs_out_at?: never
+          started_at?: string | null
+          status?: never
+        }
+        Update: {
+          clinic_id?: string | null
+          id?: string | null
+          patient_ref?: string | null
+          product_id?: string | null
+          protocol_weeks?: number | null
+          runs_out_at?: never
+          started_at?: string | null
+          status?: never
         }
         Relationships: [
           {
@@ -380,7 +431,8 @@ export type Database = {
           stage: string
         }[]
       }
-      reset_demo_data: { Args: Record<PropertyKey, never>; Returns: undefined }
+      reset_demo_data: { Args: never; Returns: undefined }
+      slugify: { Args: { input: string }; Returns: string }
       submit_certification_attempt: {
         Args: { p_answers: number[]; p_module_id: string; p_rep_id: string }
         Returns: {
@@ -389,33 +441,38 @@ export type Database = {
           total: number
         }[]
       }
-      slugify: { Args: { input: string }; Returns: string }
       upsert_product: {
         Args: {
-          p_id: string | null
-          p_name: string
           p_category: string
-          p_concentration: string
-          p_price_5ml: number | null
-          p_price_10ml: number | null
-          p_protocol_duration: string
-          p_status: string
-          p_rep_note: string | null
           p_changed_by: string
+          p_concentration: string
+          p_id: string
+          p_name: string
+          p_price_10ml: number
+          p_price_5ml: number
+          p_protocol_duration: string
+          p_rep_note: string
+          p_status: string
         }
         Returns: {
-          id: string
-          name: string
           category: string
           concentration: string
-          price_5ml: number | null
+          id: string
+          name: string
           price_10ml: number | null
+          price_5ml: number | null
           protocol_duration: string
           rep_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           version: number
-          reviewed_by: string | null
-          reviewed_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
     }
@@ -427,3 +484,126 @@ export type Database = {
     }
   }
 }
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

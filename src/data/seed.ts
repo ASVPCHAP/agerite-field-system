@@ -12,9 +12,10 @@ import type {
 // so continuity holds across the hidden demo and this real build.
 
 export const seedReps: Rep[] = [
-  { id: 'r1', name: 'Marcus Reyes', email: 'marcus@integrativeconcepts.com', territory: 'Rockwall–Fate', hire_date: '2025-02-10', cert_status: 'certified' },
-  { id: 'r2', name: 'Dana Okafor', email: 'dana@integrativeconcepts.com', territory: 'North Houston', hire_date: '2025-11-01', cert_status: 'not_started' },
-  { id: 'r3', name: 'Priya Chandra', email: 'priya@integrativeconcepts.com', territory: 'Cypress', hire_date: '2026-04-15', cert_status: 'in_progress' },
+  { id: 'r1', name: 'Marcus Reyes', email: 'marcus@integrativeconcepts.com', territory: 'Rockwall–Fate', hire_date: '2025-02-10', cert_status: 'certified', role: 'rep' },
+  { id: 'r2', name: 'Dana Okafor', email: 'dana@integrativeconcepts.com', territory: 'North Houston', hire_date: '2025-11-01', cert_status: 'not_started', role: 'rep' },
+  { id: 'r3', name: 'Priya Chandra', email: 'priya@integrativeconcepts.com', territory: 'Cypress', hire_date: '2026-04-15', cert_status: 'in_progress', role: 'rep' },
+  { id: 'r4', name: 'Cindy R.', email: 'cindy@ageritepharmacy.com', territory: 'PIC', hire_date: '2025-01-01', cert_status: 'certified', role: 'admin' },
 ]
 
 export const seedProducts: Product[] = [

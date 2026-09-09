@@ -9,7 +9,7 @@ const navItems = [
   { to: '/portal/pipeline', label: 'Pipeline' },
   { to: '/portal/refills', label: 'Refills' },
   { to: '/portal/knowledge', label: 'Knowledge base' },
-  { to: '/portal/manage-products', label: 'Manage products' },
+  { to: '/portal/manage-products', label: 'Manage products', adminOnly: true },
   { to: '/portal/territory', label: 'Territory & contacts' },
   { to: '/portal/certification', label: 'Certification' },
   { to: '/portal/states', label: 'Licensed states' },
@@ -118,7 +118,9 @@ export function PortalLayout() {
               <MenuIcon open />
             </button>
           </div>
-          {navItems.map((item) => (
+          {navItems
+            .filter((item) => !item.adminOnly || currentRep.role === 'admin')
+            .map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

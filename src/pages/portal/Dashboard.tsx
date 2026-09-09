@@ -133,15 +133,18 @@ export function Dashboard() {
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,14rem)_1fr]">
-        <Link to="/portal/manage-products?review=1" className="block">
+        <Link
+          to={currentRep?.role === 'admin' ? '/portal/manage-products?review=1' : '/portal/knowledge'}
+          className="block"
+        >
           <Card className="h-full transition-colors hover:border-[var(--surface-gold)]">
             <div className="font-mono text-3xl text-[var(--surface-ink)]">{pendingReview.length}</div>
             <div className="mt-1 font-mono text-xs tracking-wide text-[var(--surface-ink-soft)] uppercase">
               Pending PIC review
             </div>
             <p className="mt-2 text-sm text-[var(--surface-ink-soft)]">
-              Products in <span className="font-mono">pending_review</span> — Cindy / approval gate.
-              Open Manage products.
+              Products in <span className="font-mono">pending_review</span> — Cindy / approval gate.{' '}
+              {currentRep?.role === 'admin' ? 'Open Manage products.' : 'Flagged in the Knowledge base.'}
             </p>
           </Card>
         </Link>

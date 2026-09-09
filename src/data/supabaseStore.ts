@@ -35,8 +35,16 @@ function mapCertStatus(status: string): Rep['cert_status'] {
   return status as Rep['cert_status']
 }
 
-function mapRep(row: { id: string; name: string; email: string; territory: string; hire_date: string; cert_status: string }): Rep {
-  return { ...row, cert_status: mapCertStatus(row.cert_status) }
+function mapRep(row: {
+  id: string
+  name: string
+  email: string
+  territory: string
+  hire_date: string
+  cert_status: string
+  role: string
+}): Rep {
+  return { ...row, cert_status: mapCertStatus(row.cert_status), role: row.role as Rep['role'] }
 }
 
 // ---------------------------------------------------------------------------
@@ -129,16 +137,21 @@ export async function listProductChangeLog(): Promise<ProductChangeLog[]> {
  *  function used everywhere a product gets written, so the diff/change-log
  *  behavior is identical to the Sheet sync. */
 export async function upsertProduct(input: ProductFormInput, changedBy: string): Promise<Product> {
+  // The generated Args type below doesn't mark these params nullable even
+  // though the Postgres function (upsert_product, migration
+  // phase1_6_upsert_product.sql) genuinely accepts and relies on null for
+  // all four — a new product (null p_id), no 10mL size, no rep note.
+  // Casting documents that gap rather than papering over it with `any`.
   const { data, error } = await db().rpc('upsert_product', {
-    p_id: input.id ?? null,
+    p_id: (input.id ?? null) as string,
     p_name: input.name,
     p_category: input.category,
     p_concentration: input.concentration,
-    p_price_5ml: input.price_5ml,
-    p_price_10ml: input.price_10ml,
+    p_price_5ml: input.price_5ml as number,
+    p_price_10ml: input.price_10ml as number,
     p_protocol_duration: input.protocol_duration,
     p_status: input.status,
-    p_rep_note: input.rep_note,
+    p_rep_note: input.rep_note as string,
     p_changed_by: changedBy,
   })
   if (error) throw error

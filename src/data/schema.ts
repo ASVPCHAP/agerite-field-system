@@ -48,6 +48,7 @@ export interface Clinic {
 }
 
 export type CertStatus = 'not_started' | 'in_progress' | 'certified'
+export type RepRole = 'rep' | 'admin'
 
 export interface Rep {
   id: string
@@ -56,6 +57,7 @@ export interface Rep {
   territory: string
   hire_date: string // ISO date
   cert_status: CertStatus
+  role: RepRole
 }
 
 // No patient name or DOB field exists anywhere in this schema — reference

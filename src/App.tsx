@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { PublicLayout } from './layouts/PublicLayout'
 import { PortalLayout } from './layouts/PortalLayout'
+import { RequireAdmin } from './auth/RequireAdmin'
 import { Home } from './pages/public/Home'
 import { ProductReference } from './pages/public/ProductReference'
 import { Ordering } from './pages/public/Ordering'
@@ -32,7 +33,14 @@ function App() {
         <Route path="pipeline" element={<Pipeline />} />
         <Route path="refills" element={<Refills />} />
         <Route path="knowledge" element={<Knowledge />} />
-        <Route path="manage-products" element={<ManageProducts />} />
+        <Route
+          path="manage-products"
+          element={
+            <RequireAdmin>
+              <ManageProducts />
+            </RequireAdmin>
+          }
+        />
         <Route path="territory" element={<Territory />} />
         <Route path="certification" element={<Certification />} />
         <Route path="states" element={<States />} />
