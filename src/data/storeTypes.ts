@@ -1,9 +1,17 @@
 // Shared between mockStore.ts and supabaseStore.ts so store.ts can re-export
 // whichever one is active without either implementation owning the types.
 
-import type { Clinic, Product } from './schema'
+import type { Clinic, Product, Rep } from './schema'
 
 export type PublicProduct = Omit<Product, 'rep_note'> & { under_review: boolean }
+
+/** Result of requesting a magic-link sign-in. `immediate` means the mock
+ *  store completed the session right away (no real email involved) —
+ *  callers should skip the "check your email" message and just navigate. */
+export type MagicLinkResult =
+  | { ok: true; immediate: true; rep: Rep }
+  | { ok: true; immediate: false }
+  | { ok: false; error: string }
 
 export type LogContactResult =
   | { ok: true; clinic: Clinic }

@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Rep } from '../data/schema'
+import type { MagicLinkResult } from '../data/storeTypes'
 import * as store from '../data/store'
 
 interface AuthContextValue {
   currentRep: Rep | null
   loading: boolean
-  login: (repId: string) => Promise<void>
+  requestMagicLink: (email: string) => Promise<MagicLinkResult>
   logout: () => Promise<void>
   refreshCurrentRep: () => Promise<void>
 }
@@ -23,11 +24,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshCurrentRep().finally(() => setLoading(false))
+    // Catches the session appearing after the magic-link redirect, and
+    // sign-out — both happen asynchronously, after the initial mount.
+    return store.subscribeAuth(setCurrentRep)
   }, [refreshCurrentRep])
 
-  const login = useCallback(async (repId: string) => {
-    const rep = await store.login(repId)
-    setCurrentRep(rep)
+  const requestMagicLink = useCallback(async (email: string) => {
+    const result = await store.requestMagicLink(email)
+    if (result.ok && result.immediate) setCurrentRep(result.rep)
+    return result
   }, [])
 
   const logout = useCallback(async () => {
@@ -36,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ currentRep, loading, login, logout, refreshCurrentRep }}>
+    <AuthContext.Provider value={{ currentRep, loading, requestMagicLink, logout, refreshCurrentRep }}>
       {children}
     </AuthContext.Provider>
   )

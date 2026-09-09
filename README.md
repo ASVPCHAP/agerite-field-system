@@ -6,11 +6,12 @@ CSS v4, backed by a real Supabase Postgres project.
 
 ## Status
 
-Real database, real Google Sheet sync (built, not yet turned on — see
-below), mock-only where the spec explicitly still defers work: no PHI fields
-anywhere in the schema, and no real per-rep Supabase Auth session yet — login
-is a "pick a rep" stand-in for magic-link, reading real rows from the `reps`
-table. See "Known gap" below for exactly what that means and what closes it.
+Real database, real Google Sheet sync, real per-rep auth (Supabase Auth
+email magic-link — see "Real auth" below), mock-only where the spec
+explicitly still defers work: no PHI fields anywhere in the schema. The
+mock/offline store (used when no Supabase project is configured) still
+completes sign-in immediately against a seeded email for zero-setup local
+running — see that section for what's real vs. simulated in which mode.
 
 ## Running it
 
@@ -88,29 +89,33 @@ Without `.env.local`, the app falls back to a localStorage-only mock store
 - `src/pages/public/` and `src/pages/portal/` — one file per screen, matching
   section 5 of the spec 1:1.
 
-## Known gap: no real per-rep auth yet
+## Real auth (Supabase Auth email magic-link)
 
-Both the public site and the portal currently call Supabase with the same
-anon key — there's no real Supabase Auth session distinguishing "a rep is
-logged in" from "an anonymous visitor" at the database level. Practically:
+Portal sign-in is real Supabase Auth (`signInWithOtp`), not a rep-picker —
+`getCurrentRep()` resolves the logged-in rep from the *verified* email on
+the session, never a client-supplied id. The three mutation RPCs
+(`log_clinic_contact`, `submit_certification_attempt`, `upsert_product`)
+independently derive the acting rep the same way, server-side, via
+`auth.email()` — they no longer accept a rep id/name from the caller at
+all, so a forged identity isn't possible even with direct API access.
+`upsert_product` additionally requires `role = 'admin'` (see migration
+`phase1_8_real_auth_hardening.sql`). Table/view read access moved from
+`anon` to `authenticated` to match — only `public_products` (the
+public-site reference) is still anon-readable.
 
-- RLS policies grant `anon` read access broadly; the public/portal
-  separation for product data is enforced by which table/view each surface
-  queries (`public_products` vs `products`), not by two different
-  permission levels. A technically sophisticated visitor holding the
-  published anon key could query `products` directly and see rep notes.
-- The three mutation paths (ownership claim, certification grading, demo
-  reset) are locked behind `SECURITY DEFINER` functions with `anon`-only
-  execute grants — so no direct table writes are possible from the client,
-  regardless of the above.
+Auth config (`site_url`, `additional_redirect_urls`) is managed through
+`supabase/config.toml` + `supabase config push`, not the dashboard — see
+that file's `[auth]` section. Two things this repo's automation genuinely
+can't do: send itself a magic-link email and click it, or know whether
+Supabase's default email sending (rate-limited, ~1/minute per address) is
+sufficient for a real demo vs. needing custom SMTP configured in the
+dashboard. Confirm actual delivery by hand before relying on this for
+anything beyond internal review.
 
-Closing this fully means wiring real Supabase Auth (magic-link, per the
-original spec — "sufficient for prototype," not full SSO) so rep requests
-carry an authenticated JWT and RLS can gate on `auth.uid()`. That needs two
-things this session couldn't do headlessly: an Auth redirect URL added in
-the Supabase dashboard (Authentication → URL Configuration), and someone
-with a real inbox to click the link and confirm delivery. Worth doing before
-this is used for anything beyond an internal review.
+The mock/offline store (no Supabase project configured) keeps a simulated
+version — `requestMagicLink` completes the session immediately for a
+seeded rep's email, no real email involved — purely so the app still runs
+for anyone who clones the repo without setting up a backend.
 
 ## Design tokens
 

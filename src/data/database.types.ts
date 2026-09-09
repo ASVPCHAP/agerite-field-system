@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       certification_attempts: {
@@ -422,7 +447,7 @@ export type Database = {
     }
     Functions: {
       log_clinic_contact: {
-        Args: { p_clinic_id: string; p_rep_id: string; p_today?: string }
+        Args: { p_clinic_id: string; p_today?: string }
         Returns: {
           ok: boolean
           owner_name: string
@@ -434,7 +459,7 @@ export type Database = {
       reset_demo_data: { Args: never; Returns: undefined }
       slugify: { Args: { input: string }; Returns: string }
       submit_certification_attempt: {
-        Args: { p_answers: number[]; p_module_id: string; p_rep_id: string }
+        Args: { p_answers: number[]; p_module_id: string }
         Returns: {
           passed: boolean
           score: number
@@ -444,7 +469,6 @@ export type Database = {
       upsert_product: {
         Args: {
           p_category: string
-          p_changed_by: string
           p_concentration: string
           p_id: string
           p_name: string
@@ -603,6 +627,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

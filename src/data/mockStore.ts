@@ -28,7 +28,7 @@ import {
   seedProducts,
   seedReps,
 } from './seed'
-import type { LogContactResult, ProductFormInput, PublicProduct, SheetSyncResult } from './storeTypes'
+import type { LogContactResult, MagicLinkResult, ProductFormInput, PublicProduct, SheetSyncResult } from './storeTypes'
 
 const STORAGE_KEY = 'agerite_field_system_db_v1'
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -89,24 +89,28 @@ export async function resetDemoData(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Auth (lightweight, per spec section 2 — magic-link stand-in for the demo,
-// upgradeable to real Supabase Auth without changing callers' shape).
+// Auth. No real Supabase project means no real email to send — this store
+// completes the "magic link" immediately if the email matches a seeded rep,
+// which is what makes the app runnable with zero setup. See
+// supabaseStore.ts for the real signInWithOtp version.
 // ---------------------------------------------------------------------------
 
-export async function listRepsForLogin(): Promise<Rep[]> {
-  return structuredClone(db.reps)
+export async function requestMagicLink(email: string): Promise<MagicLinkResult> {
+  const normalized = email.trim().toLowerCase()
+  const rep = db.reps.find((r) => r.email.toLowerCase() === normalized)
+  if (!rep) return { ok: false, error: 'No rep in the demo data has that email.' }
+  try {
+    localStorage.setItem(SESSION_KEY, rep.id)
+  } catch {
+    /* ignore */
+  }
+  return { ok: true, immediate: true, rep: structuredClone(rep) }
 }
 
-export async function login(repId: string): Promise<Rep | null> {
-  const rep = db.reps.find((r) => r.id === repId) ?? null
-  if (rep) {
-    try {
-      localStorage.setItem(SESSION_KEY, repId)
-    } catch {
-      /* ignore */
-    }
-  }
-  return rep ? structuredClone(rep) : null
+/** No-op in mock mode — requestMagicLink already completes the session
+ *  synchronously, so there's no async auth-state event to subscribe to. */
+export function subscribeAuth(_onChange: (rep: Rep | null) => void): () => void {
+  return () => {}
 }
 
 export async function logout(): Promise<void> {

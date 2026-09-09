@@ -21,10 +21,8 @@ import type {
   RefillWithStatus,
   Rep,
 } from './schema'
-import type { PublicProduct, LogContactResult, ProductFormInput, SheetSyncResult } from './storeTypes'
+import type { PublicProduct, LogContactResult, MagicLinkResult, ProductFormInput, SheetSyncResult } from './storeTypes'
 import { supabase } from './supabaseClient'
-
-const SESSION_KEY = 'agerite_field_system_rep_id'
 
 function db() {
   if (!supabase) throw new Error('Supabase is not configured (missing VITE_SUPABASE_URL/ANON_KEY)')
@@ -48,46 +46,42 @@ function mapRep(row: {
 }
 
 // ---------------------------------------------------------------------------
-// Auth (same lightweight rep-picker as the mock store — no real Supabase
-// Auth session yet; see README for what that would take).
+// Auth — real Supabase Auth email magic-link. Session persistence and the
+// redirect round-trip are handled by the supabase-js client itself; this
+// module's job is just resolving "who is the authenticated session, if
+// any" down to a reps row, by verified email — never by a client-supplied
+// id. See supabase/migrations/..._phase1_8_real_auth_hardening.sql for the
+// server-side half (RPCs derive the same way, independently).
 // ---------------------------------------------------------------------------
 
-export async function listRepsForLogin(): Promise<Rep[]> {
-  const { data, error } = await db().from('reps').select('*').order('name')
-  if (error) throw error
-  return data.map(mapRep)
+export async function requestMagicLink(email: string): Promise<MagicLinkResult> {
+  const { error } = await db().auth.signInWithOtp({
+    email: email.trim(),
+    options: { emailRedirectTo: `${window.location.origin}/portal/login` },
+  })
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, immediate: false }
 }
 
-export async function login(repId: string): Promise<Rep | null> {
-  const { data, error } = await db().from('reps').select('*').eq('id', repId).maybeSingle()
-  if (error) throw error
-  if (data) {
-    try {
-      localStorage.setItem(SESSION_KEY, repId)
-    } catch {
-      /* ignore */
-    }
-  }
-  return data ? mapRep(data) : null
+/** Fires on every Supabase auth event (sign-in completing after the
+ *  magic-link redirect, sign-out, token refresh) — this is what actually
+ *  catches the session appearing, since it lands asynchronously after the
+ *  redirect rather than being available at initial mount. */
+export function subscribeAuth(onChange: (rep: Rep | null) => void): () => void {
+  const { data } = db().auth.onAuthStateChange(async () => {
+    onChange(await getCurrentRep())
+  })
+  return () => data.subscription.unsubscribe()
 }
 
 export async function logout(): Promise<void> {
-  try {
-    localStorage.removeItem(SESSION_KEY)
-  } catch {
-    /* ignore */
-  }
+  await db().auth.signOut()
 }
 
 export async function getCurrentRep(): Promise<Rep | null> {
-  let repId: string | null = null
-  try {
-    repId = localStorage.getItem(SESSION_KEY)
-  } catch {
-    /* ignore */
-  }
-  if (!repId) return null
-  const { data, error } = await db().from('reps').select('*').eq('id', repId).maybeSingle()
+  const { data: userData, error: userError } = await db().auth.getUser()
+  if (userError || !userData.user?.email) return null
+  const { data, error } = await db().from('reps').select('*').eq('email', userData.user.email).maybeSingle()
   if (error) throw error
   return data ? mapRep(data) : null
 }
@@ -135,8 +129,12 @@ export async function listProductChangeLog(): Promise<ProductChangeLog[]> {
 
 /** "Manage Products" form target — calls the same upsert_product() Postgres
  *  function used everywhere a product gets written, so the diff/change-log
- *  behavior is identical to the Sheet sync. */
-export async function upsertProduct(input: ProductFormInput, changedBy: string): Promise<Product> {
+ *  behavior is identical to the Sheet sync.
+ *  _changedBy is kept for interface parity with mockStore.ts — the real
+ *  backend now derives changed_by from the authenticated session (and
+ *  requires role='admin') and ignores any client-supplied value. See
+ *  upsert_product in the phase1_8 migration. */
+export async function upsertProduct(input: ProductFormInput, _changedBy: string): Promise<Product> {
   // The generated Args type below doesn't mark these params nullable even
   // though the Postgres function (upsert_product, migration
   // phase1_6_upsert_product.sql) genuinely accepts and relies on null for
@@ -152,7 +150,6 @@ export async function upsertProduct(input: ProductFormInput, changedBy: string):
     p_protocol_duration: input.protocol_duration,
     p_status: input.status,
     p_rep_note: input.rep_note as string,
-    p_changed_by: changedBy,
   })
   if (error) throw error
   return data as unknown as Product
@@ -168,10 +165,14 @@ export async function listClinics(): Promise<Clinic[]> {
   return data as Clinic[]
 }
 
-export async function logClinicContact(clinicId: string, repId: string, today: Date): Promise<LogContactResult> {
+// _repId is kept for interface parity with mockStore.ts (which has no
+// server session to derive it from) — the real backend now resolves the
+// acting rep from the caller's authenticated email, server-side, and
+// ignores any client-supplied id. See log_clinic_contact in the phase1_8
+// migration.
+export async function logClinicContact(clinicId: string, _repId: string, today: Date): Promise<LogContactResult> {
   const { data, error } = await db().rpc('log_clinic_contact', {
     p_clinic_id: clinicId,
-    p_rep_id: repId,
     p_today: today.toISOString().slice(0, 10),
   })
   if (error) throw error
@@ -244,13 +245,15 @@ export async function listCertificationModules(): Promise<CertificationModule[]>
   }))
 }
 
+// _repId kept for interface parity with mockStore.ts — the real backend
+// derives the acting rep from the authenticated session, server-side. See
+// submit_certification_attempt in the phase1_8 migration.
 export async function submitCertificationAttempt(
-  repId: string,
+  _repId: string,
   moduleId: string,
   answers: number[],
 ): Promise<CertificationAttempt> {
   const { data, error } = await db().rpc('submit_certification_attempt', {
-    p_rep_id: repId,
     p_module_id: moduleId,
     p_answers: answers,
   })
@@ -258,7 +261,7 @@ export async function submitCertificationAttempt(
   const row = data[0]
   return {
     id: `att-${Date.now()}`,
-    rep_id: repId,
+    rep_id: _repId,
     module_id: moduleId,
     score: row.score,
     passed: row.passed,
@@ -272,14 +275,12 @@ export async function submitCertificationAttempt(
 // data, not just the local browser (unlike the mock store's version).
 // ---------------------------------------------------------------------------
 
+// No longer clears any local session on reset — with a real Supabase Auth
+// session there's nothing demo-data-shaped to clear, and forcing a
+// re-login on every reset would be a regression, not a safety measure.
 export async function resetDemoData(): Promise<void> {
   const { error } = await db().rpc('reset_demo_data')
   if (error) throw error
-  try {
-    localStorage.removeItem(SESSION_KEY)
-  } catch {
-    /* ignore */
-  }
 }
 
 // ---------------------------------------------------------------------------
