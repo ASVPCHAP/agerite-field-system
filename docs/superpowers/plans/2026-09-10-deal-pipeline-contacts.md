@@ -97,13 +97,18 @@ from clinics
 where phone is not null or email is not null;
 
 -- Now safe to simplify clinics.stage — the old values were read above.
+-- Constraint drops BEFORE the update: the old constraint only allows the
+-- 6 old values, so writing 'in_pipeline'/'active' while it's still active
+-- fails (SQLSTATE 23514) — drop it first, write the new values, then add
+-- the new constraint back to validate them.
+alter table clinics drop constraint clinics_stage_check;
+
 update clinics set stage = case
   when stage in ('identify', 'drop_in', 'discovery', 'solution') then 'in_pipeline'
   when stage in ('onboard', 'reorder') then 'active'
   else 'in_pipeline'
 end;
 
-alter table clinics drop constraint clinics_stage_check;
 alter table clinics add constraint clinics_stage_check check (stage in ('in_pipeline', 'active', 'lost'));
 
 alter table clinics drop column next_step;
