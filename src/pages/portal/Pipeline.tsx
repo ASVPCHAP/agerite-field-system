@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import type { Clinic, Rep } from '../../data/schema'
+import type { ActivityType, Clinic, Rep } from '../../data/schema'
 import { clinicNeedsContact, isActionableClinic, NO_CONTACT_DAYS } from '../../data/attention'
-import { listClinics, listReps, logClinicContact } from '../../data/store'
+import { listClinics, listReps, logActivity } from '../../data/store'
 import { Note, Pill, SectionHeading, TableWrap, td, tdMono, th } from '../../components/ui'
+import { LogActivityForm } from '../../components/LogActivityForm'
+import { ActivityHistory } from '../../components/ActivityHistory'
 
 export function Pipeline() {
   const { currentRep } = useAuth()
@@ -15,6 +17,8 @@ export function Pipeline() {
   const [reps, setReps] = useState<Rep[]>([])
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState<{ tone: 'ok' | 'blocked'; text: string } | null>(null)
+  const [openPanel, setOpenPanel] = useState<{ clinicId: string; kind: 'log' | 'history' } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const refresh = () => listClinics().then(setClinics)
 
@@ -23,7 +27,7 @@ export function Pipeline() {
     listReps().then(setReps)
   }, [])
 
-  const repById = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps])
+  const repById = useMemo(() => new Map(reps.map((r) => [r.id, r.name])), [reps])
   const today = useMemo(() => new Date(), [])
   const filtered = clinics.filter((c) => {
     if (!c.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -31,24 +35,24 @@ export function Pipeline() {
     return isActionableClinic(c, currentRep?.id) && clinicNeedsContact(c, today)
   })
 
-  async function handleLogContact(clinicId: string) {
+  async function handleLog(clinicId: string, type: ActivityType, notes: string, occurredAt: string) {
     if (!currentRep) return
+    const clinicName = clinics.find((c) => c.id === clinicId)?.name
     const wasUnowned = !clinics.find((c) => c.id === clinicId)?.owner_rep_id
-    const result = await logClinicContact(clinicId, currentRep.id, new Date())
+    setSubmitting(true)
+    const result = await logActivity({ clinicId, type, notes: notes || null, occurredAt }, currentRep.id)
+    setSubmitting(false)
     if (result.ok) {
       setMessage({
         tone: 'ok',
-        text: wasUnowned
-          ? `${result.clinic.name} is now owned by you (${currentRep.name}), effective today.`
-          : `Contact logged for ${result.clinic.name}.`,
+        text: wasUnowned ? `${clinicName} is now owned by you (${currentRep.name}), effective today.` : `Logged for ${clinicName}.`,
       })
+      setOpenPanel(null)
       refresh()
-    } else {
+    } else if (result.reason === 'owned_by_other') {
       setMessage({
         tone: 'blocked',
-        text: `Blocked — ${clinics.find((c) => c.id === clinicId)?.name} is owned by ${result.ownerName}${
-          result.since ? ` since ${result.since}` : ''
-        }. You can't log a new interaction here. Ask an admin to reassign if this is wrong.`,
+        text: `Blocked — ${clinicName} is owned by ${result.ownerName}${result.since ? ` since ${result.since}` : ''}. You can't log a new interaction here. Ask an admin to reassign if this is wrong.`,
       })
     }
   }
@@ -61,14 +65,14 @@ export function Pipeline() {
       </div>
       {action === 'log' && (
         <div className="mt-3">
-          <Note>Use Log contact on a clinic below. First touch on an open clinic claims ownership.</Note>
+          <Note>Use Log activity on a clinic below. First touch on an open clinic claims ownership.</Note>
         </div>
       )}
       {action === 'add' && (
         <div className="mt-3">
           <Note>
             Phase 1 has no separate add-clinic form — a clinic enters your book when you log the
-            first contact on an open row.
+            first activity on an open row.
           </Note>
         </div>
       )}
@@ -110,28 +114,55 @@ export function Pipeline() {
           </thead>
           <tbody>
             {filtered.map((c) => {
-              const owner = c.owner_rep_id ? repById.get(c.owner_rep_id) : null
+              const ownerName = c.owner_rep_id ? repById.get(c.owner_rep_id) : null
+              const isOpen = openPanel?.clinicId === c.id
               return (
-                <tr key={c.id}>
-                  <td className={td}>{c.name}</td>
-                  <td className={td}>{c.city}</td>
-                  <td className={td}>{c.segment}</td>
-                  <td className={td}>{c.tier}</td>
-                  <td className={tdMono}>{c.stage}</td>
-                  <td className={td}>
-                    {owner ? <Pill tone="owned">{owner.name}</Pill> : <Pill tone="open">Open</Pill>}
-                  </td>
-                  <td className={td}>{c.next_step ?? '—'}</td>
-                  <td className={td}>
-                    <button
-                      type="button"
-                      onClick={() => handleLogContact(c.id)}
-                      className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
-                    >
-                      Log contact
-                    </button>
-                  </td>
-                </tr>
+                <Fragment key={c.id}>
+                  <tr>
+                    <td className={td}>{c.name}</td>
+                    <td className={td}>{c.city}</td>
+                    <td className={td}>{c.segment}</td>
+                    <td className={td}>{c.tier}</td>
+                    <td className={tdMono}>{c.stage}</td>
+                    <td className={td}>
+                      {ownerName ? <Pill tone="owned">{ownerName}</Pill> : <Pill tone="open">Open</Pill>}
+                    </td>
+                    <td className={td}>{c.next_step ?? '—'}</td>
+                    <td className={td}>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'log' ? null : { clinicId: c.id, kind: 'log' })}
+                          className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                        >
+                          Log activity
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'history' ? null : { clinicId: c.id, kind: 'history' })}
+                          className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                        >
+                          History
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={8} className={td}>
+                        {openPanel.kind === 'log' ? (
+                          <LogActivityForm
+                            submitting={submitting}
+                            onSubmit={(type, notes, occurredAt) => handleLog(c.id, type, notes, occurredAt)}
+                            onCancel={() => setOpenPanel(null)}
+                          />
+                        ) : (
+                          <ActivityHistory target={{ clinicId: c.id }} repById={repById} />
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )
             })}
           </tbody>

@@ -8,6 +8,7 @@
 // here needs to change shape when that happens.
 
 import type {
+  Activity,
   CertificationAttempt,
   CertificationModule,
   Clinic,
@@ -32,7 +33,8 @@ import {
 } from './seed'
 import type {
   AssistantResult,
-  LogContactResult,
+  LogActivityInput,
+  LogActivityResult,
   MagicLinkResult,
   NewLeadInput,
   ProductFormInput,
@@ -48,6 +50,7 @@ interface DbShape {
   productChangeLog: ProductChangeLog[]
   clinics: Clinic[]
   leads: Lead[]
+  activities: Activity[]
   reps: Rep[]
   patientRefills: PatientRefill[]
   licensedStates: LicensedState[]
@@ -61,6 +64,7 @@ function seedDb(): DbShape {
     productChangeLog: structuredClone(seedProductChangeLog),
     clinics: structuredClone(seedClinics),
     leads: structuredClone(seedLeads),
+    activities: [],
     reps: structuredClone(seedReps),
     patientRefills: structuredClone(seedPatientRefills),
     licensedStates: structuredClone(seedLicensedStates),
@@ -262,25 +266,103 @@ export async function listClinics(): Promise<Clinic[]> {
   return structuredClone(db.clinics)
 }
 
-/** First rep to log a touch owns the clinic, permanently, unless an admin
- *  reassigns it. Any other rep is blocked with a named "owned by, since"
- *  result rather than silently allowed to overwrite. */
-export async function logClinicContact(clinicId: string, repId: string, today: Date): Promise<LogContactResult> {
-  const clinic = db.clinics.find((c) => c.id === clinicId)
-  if (!clinic) throw new Error(`Unknown clinic: ${clinicId}`)
+export async function listActivities(target: { leadId?: string; clinicId?: string }): Promise<Activity[]> {
+  return structuredClone(
+    db.activities
+      .filter((a) => (target.leadId ? a.lead_id === target.leadId : a.clinic_id === target.clinicId))
+      .sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1)),
+  )
+}
 
-  if (clinic.owner_rep_id && clinic.owner_rep_id !== repId) {
-    const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
-    return { ok: false, reason: 'owned_by_other', ownerName: owner?.name ?? 'another rep', since: clinic.last_touch_at }
+/** Logs a call/text/visit/email/note against exactly one of a lead or a
+ *  clinic. On a clinic: first rep to log anything owns it, permanently,
+ *  unless an admin reassigns it — any other rep is blocked with a named
+ *  "owned by, since" result rather than silently allowed to overwrite.
+ *  On a lead: a 'visit' IS the promotion (same effect as promoteLead);
+ *  anything else just bumps status new -> contacted. Mirrors
+ *  log_activity in the phase1_13 migration. */
+export async function logActivity(input: LogActivityInput, repId: string): Promise<LogActivityResult> {
+  const activityId = `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+
+  if (input.clinicId) {
+    const clinic = db.clinics.find((c) => c.id === input.clinicId)
+    if (!clinic) throw new Error(`Unknown clinic: ${input.clinicId}`)
+
+    if (clinic.owner_rep_id && clinic.owner_rep_id !== repId) {
+      const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
+      return { ok: false, reason: 'owned_by_other', ownerName: owner?.name ?? 'another rep', since: clinic.last_touch_at }
+    }
+
+    db.activities.push({
+      id: activityId,
+      lead_id: null,
+      clinic_id: input.clinicId,
+      rep_id: repId,
+      type: input.type,
+      notes: input.notes,
+      occurred_at: input.occurredAt,
+      created_at: new Date().toISOString(),
+    })
+
+    if (!clinic.owner_rep_id) {
+      clinic.owner_rep_id = repId
+      if (clinic.stage === 'identify') clinic.stage = 'drop_in'
+    }
+    clinic.last_touch_at = input.occurredAt
+    persist()
+    return { ok: true, activityId, promotedClinicId: null }
   }
 
-  if (!clinic.owner_rep_id) {
-    clinic.owner_rep_id = repId
-    if (clinic.stage === 'identify') clinic.stage = 'drop_in'
+  const lead = db.leads.find((l) => l.id === input.leadId)
+  if (!lead) throw new Error(`Unknown lead: ${input.leadId}`)
+  if (lead.status === 'promoted') {
+    return { ok: false, reason: 'already_promoted', clinicId: lead.promoted_clinic_id }
   }
-  clinic.last_touch_at = isoDate(today)
+
+  db.activities.push({
+    id: activityId,
+    lead_id: input.leadId!,
+    clinic_id: null,
+    rep_id: repId,
+    type: input.type,
+    notes: input.notes,
+    occurred_at: input.occurredAt,
+    created_at: new Date().toISOString(),
+  })
+
+  let promotedClinicId: string | null = null
+  if (input.type === 'visit') {
+    let id = slugify(lead.name) || 'clinic'
+    let suffix = 2
+    while (db.clinics.some((c) => c.id === id)) {
+      id = `${slugify(lead.name) || 'clinic'}-${suffix}`
+      suffix += 1
+    }
+    const clinic: Clinic = {
+      id,
+      name: lead.name,
+      city: lead.city,
+      segment: lead.segment,
+      tier: lead.tier,
+      cluster: lead.cluster,
+      website: lead.website ?? '',
+      phone: lead.phone,
+      email: lead.email,
+      owner_rep_id: repId,
+      stage: 'drop_in',
+      last_touch_at: input.occurredAt,
+      next_step: 'Follow up after visit',
+    }
+    db.clinics.push(clinic)
+    lead.status = 'promoted'
+    lead.promoted_clinic_id = id
+    promotedClinicId = id
+  } else if (lead.status === 'new') {
+    lead.status = 'contacted'
+  }
+
   persist()
-  return { ok: true, clinic: structuredClone(clinic) }
+  return { ok: true, activityId, promotedClinicId }
 }
 
 // ---------------------------------------------------------------------------
@@ -312,9 +394,9 @@ export async function createLeads(inputs: NewLeadInput[]): Promise<Lead[]> {
 }
 
 /** Promotes a lead into a real, owned clinic in one step — "I looked at
- *  this and I'm working it now." Mirrors logClinicContact's ownership
- *  semantics rather than creating an unowned clinic someone would then
- *  have to separately claim. Matches promote_lead() in the phase1_10
+ *  this and I'm working it now." Same effect as logging a 'visit'
+ *  activity on the lead — this is the standalone button's path to the
+ *  same outcome, not a separate concept. Matches promote_lead() in the phase1_10
  *  migration. */
 export async function promoteLead(leadId: string, repId: string, nextStep = 'Discovery call'): Promise<Clinic> {
   const lead = db.leads.find((l) => l.id === leadId)

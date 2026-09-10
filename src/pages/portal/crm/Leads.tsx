@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../auth/AuthContext'
-import type { Clinic, Lead, Rep } from '../../../data/schema'
-import { listClinics, listLeads, listReps, promoteLead } from '../../../data/store'
+import type { ActivityType, Clinic, Lead, Rep } from '../../../data/schema'
+import { listClinics, listLeads, listReps, logActivity, promoteLead } from '../../../data/store'
 import { Note, Pill, SectionHeading, TableWrap, td, th } from '../../../components/ui'
+import { LogActivityForm } from '../../../components/LogActivityForm'
+import { ActivityHistory } from '../../../components/ActivityHistory'
 
 type BookState = 'prospecting' | 'pipeline' | 'active'
 
@@ -15,6 +17,7 @@ interface BookRow {
   cluster: string
   state: BookState
   leadId?: string
+  clinicId?: string
   ownerName?: string
 }
 
@@ -45,6 +48,8 @@ export function Leads() {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [openPanel, setOpenPanel] = useState<{ key: string; kind: 'log' | 'history' } | null>(null)
 
   function refresh() {
     listLeads().then(setLeads)
@@ -56,7 +61,7 @@ export function Leads() {
     listReps().then(setReps)
   }, [])
 
-  const repById = useMemo(() => new Map(reps.map((r) => [r.id, r])), [reps])
+  const repById = useMemo(() => new Map(reps.map((r) => [r.id, r.name])), [reps])
 
   const rows: BookRow[] = useMemo(() => {
     const leadRows: BookRow[] = leads
@@ -79,7 +84,8 @@ export function Leads() {
       tier: c.tier,
       cluster: c.cluster,
       state: c.stage === 'reorder' ? 'active' : 'pipeline',
-      ownerName: c.owner_rep_id ? repById.get(c.owner_rep_id)?.name : undefined,
+      clinicId: c.id,
+      ownerName: c.owner_rep_id ? repById.get(c.owner_rep_id) : undefined,
     }))
     return [...leadRows, ...clinicRows].sort((a, b) => a.name.localeCompare(b.name))
   }, [leads, clinics, repById])
@@ -106,6 +112,30 @@ export function Leads() {
       setMessage(err instanceof Error ? err.message : 'Promote failed.')
     } finally {
       setPromoting(null)
+    }
+  }
+
+  async function handleLog(row: BookRow, type: ActivityType, notes: string, occurredAt: string) {
+    if (!currentRep) return
+    setSubmitting(true)
+    setMessage(null)
+    const result = await logActivity(
+      { leadId: row.leadId, clinicId: row.clinicId, type, notes: notes || null, occurredAt },
+      currentRep.id,
+    )
+    setSubmitting(false)
+    if (result.ok) {
+      setMessage(
+        result.promotedClinicId
+          ? `${row.name} promoted to pipeline from the visit — you're the owner.`
+          : `Logged for ${row.name}.`,
+      )
+      setOpenPanel(null)
+      refresh()
+    } else if (result.reason === 'owned_by_other') {
+      setMessage(`Blocked — ${row.name} is owned by ${result.ownerName}${result.since ? ` since ${result.since}` : ''}.`)
+    } else {
+      setMessage(`${row.name} was already promoted — log against it on the Pipeline tab instead.`)
     }
   }
 
@@ -177,38 +207,75 @@ export function Leads() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r) => (
-              <tr key={r.key} className={`border-l-4 ${STATE_BORDER[r.state]}`}>
-                <td className={td}>{r.name}</td>
-                <td className={td}>{r.city}</td>
-                <td className={td}>{r.segment}</td>
-                <td className={td}>{r.tier}</td>
-                <td className={td}>{r.cluster}</td>
-                <td className={td}>
-                  {r.state === 'active' ? (
-                    <Pill tone="current">{STATE_LABEL[r.state]}</Pill>
-                  ) : r.state === 'pipeline' ? (
-                    <Pill tone={r.ownerName ? 'owned' : 'open'}>
-                      {r.ownerName ? `Owned · ${r.ownerName}` : STATE_LABEL[r.state]}
-                    </Pill>
-                  ) : (
-                    <Pill tone="review">{STATE_LABEL[r.state]}</Pill>
+            {filtered.map((r) => {
+              const isOpen = openPanel?.key === r.key
+              return (
+                <Fragment key={r.key}>
+                  <tr className={`border-l-4 ${STATE_BORDER[r.state]}`}>
+                    <td className={td}>{r.name}</td>
+                    <td className={td}>{r.city}</td>
+                    <td className={td}>{r.segment}</td>
+                    <td className={td}>{r.tier}</td>
+                    <td className={td}>{r.cluster}</td>
+                    <td className={td}>
+                      {r.state === 'active' ? (
+                        <Pill tone="current">{STATE_LABEL[r.state]}</Pill>
+                      ) : r.state === 'pipeline' ? (
+                        <Pill tone={r.ownerName ? 'owned' : 'open'}>
+                          {r.ownerName ? `Owned · ${r.ownerName}` : STATE_LABEL[r.state]}
+                        </Pill>
+                      ) : (
+                        <Pill tone="review">{STATE_LABEL[r.state]}</Pill>
+                      )}
+                    </td>
+                    <td className={td}>
+                      <div className="flex flex-wrap gap-2">
+                        {r.leadId && (
+                          <button
+                            type="button"
+                            disabled={promoting === r.leadId}
+                            onClick={() => handlePromote(r.leadId!, r.name)}
+                            className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs disabled:opacity-60 md:min-h-0 md:py-1"
+                          >
+                            {promoting === r.leadId ? 'Promoting…' : 'Promote to pipeline'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'log' ? null : { key: r.key, kind: 'log' })}
+                          className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                        >
+                          Log activity
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'history' ? null : { key: r.key, kind: 'history' })}
+                          className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                        >
+                          History
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={7} className={td}>
+                        {openPanel.kind === 'log' ? (
+                          <LogActivityForm
+                            isLead={Boolean(r.leadId)}
+                            submitting={submitting}
+                            onSubmit={(type, notes, occurredAt) => handleLog(r, type, notes, occurredAt)}
+                            onCancel={() => setOpenPanel(null)}
+                          />
+                        ) : (
+                          <ActivityHistory target={{ leadId: r.leadId, clinicId: r.clinicId }} repById={repById} />
+                        )}
+                      </td>
+                    </tr>
                   )}
-                </td>
-                <td className={td}>
-                  {r.leadId && (
-                    <button
-                      type="button"
-                      disabled={promoting === r.leadId}
-                      onClick={() => handlePromote(r.leadId!, r.name)}
-                      className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs disabled:opacity-60 md:min-h-0 md:py-1"
-                    >
-                      {promoting === r.leadId ? 'Promoting…' : 'Promote to pipeline'}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
       </TableWrap>

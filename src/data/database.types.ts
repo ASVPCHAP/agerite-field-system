@@ -39,6 +39,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          clinic_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          notes: string | null
+          occurred_at: string
+          rep_id: string
+          type: string
+        }
+        Insert: {
+          clinic_id?: string | null
+          created_at?: string
+          id: string
+          lead_id?: string | null
+          notes?: string | null
+          occurred_at?: string
+          rep_id: string
+          type: string
+        }
+        Update: {
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          occurred_at?: string
+          rep_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_rep_id_fkey"
+            columns: ["rep_id"]
+            isOneToOne: false
+            referencedRelation: "reps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certification_attempts: {
         Row: {
           completed_at: string
@@ -508,14 +563,21 @@ export type Database = {
       }
     }
     Functions: {
-      log_clinic_contact: {
-        Args: { p_clinic_id: string; p_today?: string }
+      log_activity: {
+        Args: {
+          p_clinic_id?: string
+          p_lead_id?: string
+          p_notes?: string
+          p_occurred_at?: string
+          p_type?: string
+        }
         Returns: {
+          activity_id: string
           ok: boolean
           owner_name: string
-          owner_rep_id: string
+          promoted_clinic_id: string
+          reason: string
           since: string
-          stage: string
         }[]
       }
       promote_lead: {

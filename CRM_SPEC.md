@@ -8,11 +8,12 @@
 ## 0. What this is
 
 A CRM section inside the existing portal, reached via one "CRM" nav item
-(`/portal/crm`), with three sub-tabs: **Leads**, **Pipeline**, **Analytics**.
-This isn't a new app bolted on — Pipeline already existed as its own
-top-level page; it moved under this section rather than staying a
-duplicate concept next to Leads. The one genuinely new piece is **Leads**
-and the `leads` table behind it.
+(`/portal/crm`), with four sub-tabs: **Leads**, **Pipeline**, **Find
+Prospects**, **Analytics**. This isn't a new app bolted on — Pipeline
+already existed as its own top-level page; it moved under this section
+rather than staying a duplicate concept next to Leads. The genuinely new
+pieces are **Leads** (and the `leads` table behind it), **Find
+Prospects**, and activity logging (section 7).
 
 ## 1. Why a separate `leads` table
 
@@ -178,7 +179,46 @@ change data), no conversation history (each question is independent),
 and it can only answer from the data summary it's given — it has no way
 to browse further or fetch something not included in that summary.
 
-## 7. What this doesn't do
+## 7. Activity logging — replaces `log_clinic_contact`
+
+Before this, a clinic had a single `next_step`/`last_touch_at` — the
+latest state, no history of what actually happened. A new `activities`
+table (`lead_id`/`clinic_id`, exactly one set — a real check constraint,
+not just documented intent — `rep_id`, `type`, `notes`, `occurred_at`)
+replaces that with a proper timeline, on both Leads and Pipeline.
+
+**`log_activity()` replaces `log_clinic_contact()`** — the ownership-lock
+logic had to live somewhere, and it's the same rule either way:
+- **On a clinic**: identical lock semantics to before (first touch claims
+  it, blocked-with-owner-name for anyone else) — now also writes a real
+  history row instead of only overwriting `next_step`.
+- **On a lead**: logging a `visit` *is* the promotion — same effect as
+  `promote_lead()` (which stays, unchanged, for the standalone "Promote
+  to pipeline" button — this is a second path to the same outcome, not a
+  replacement). Matches how it was actually described: a rep can call or
+  text a lead without committing to anything, but an in-person visit is
+  the moment a real relationship starts. Any other type just bumps
+  `status` from `new` to `contacted`. Logging against an already-promoted
+  lead is refused with the resulting clinic id, not silently accepted.
+
+**Real UX change, not just an addition**: Pipeline's one-click "Log
+contact" became a small form (type, notes, date) — worth knowing since
+it changes a flow reps already used, not just adds a new one.
+
+**Viewing history**: neither Leads nor Pipeline had anywhere to see past
+activity before this — both now have a "History" action per row (a
+simple chronological list: date, type, rep, notes).
+
+**What this doesn't do**: no editing or deleting a logged activity once
+saved, no activity-level notifications, and `'email'` is a loggable type
+now (manually) but nothing auto-populates it yet — that's the separate,
+larger "pick up emails automatically" effort, deliberately scoped out of
+this pass (OAuth with each rep's actual inbox, ongoing sync, matching
+messages to the right clinic — closer in size to the phone/email
+enrichment idea already punted on for Find Prospects than to anything
+built so far).
+
+## 8. What this doesn't do
 
 - **No lead creation/editing from the UI.** Leads are seeded (or,
   eventually, imported the way products are) — there's no "add a lead"

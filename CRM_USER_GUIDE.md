@@ -25,21 +25,35 @@ colored bar on the left telling you which:
 Use the filters at the top (cluster, tier, state) to narrow down to, say,
 "Tier 1 prospects in Rockwall core" before a field day.
 
-**When you find one worth working:** click **Promote to pipeline**. This
-does two things at once — it moves them from "research" into your actual
-working list, and it claims them as yours (same rule as everywhere else
-in this portal: first rep to touch it owns it). Don't promote something
-you're not actually about to work — that's what the gold "Prospecting"
-state is for, browsing without committing.
+**Calling or texting a prospect?** Use **Log activity** right on this
+screen — pick Call or Text, add a note, save. It doesn't move them to
+Pipeline or claim them; it's just a record that you reached out.
+
+**Visited in person and actually talked to them?** Also **Log
+activity**, but pick **In-person visit**. That one's different — it *is*
+the moment a real relationship starts, so it does what **Promote to
+pipeline** does: moves them into your working list and claims them as
+yours (same rule as everywhere else in this portal: first rep to touch
+it owns it). You can also just click **Promote to pipeline** directly if
+you'd rather skip logging a specific visit.
+
+Either way, don't log a visit (or promote) on something you're not
+actually about to work — that's what the gold "Prospecting" state is
+for, calling and texting around without committing yet.
+
+**History** on any row shows everything logged against it so far — who,
+when, what kind, and any notes.
 
 ## Pipeline: what you're actively working
 
 This is your working list — everything you've promoted or claimed, with
-its stage, next step, and who owns it. Use **Log contact** every time you
-touch an account; that's what keeps stage and "last touched" accurate for
-everyone, including you next week.
+its stage, next step, and who owns it. Use **Log activity** every time
+you touch an account — call, text, visit, email, or just a note — and
+pick the type and add a note. That's what keeps the history (and
+"last touched") accurate for everyone, including you next week. Click
+**History** on a row to see everything logged so far.
 
-If you try to log a contact on something someone else already owns,
+If you try to log an activity on something someone else already owns,
 you'll be told who and since when — that's not a bug, that's the point.
 Ask an admin if you think it's wrong.
 

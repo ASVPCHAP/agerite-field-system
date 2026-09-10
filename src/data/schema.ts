@@ -71,6 +71,24 @@ export interface Lead {
   created_at: string // ISO date
 }
 
+export type ActivityType = 'call' | 'text' | 'visit' | 'email' | 'note'
+
+/** A logged interaction — the real CRM history, replacing the old
+ *  single-value next_step/last_touch_at-only pattern. Attaches to
+ *  exactly one of lead_id/clinic_id, never both. Logging a 'visit' on a
+ *  lead is what promotes it (see log_activity in the phase1_13
+ *  migration) — a call/text/email/note is just activity. */
+export interface Activity {
+  id: string
+  lead_id: string | null
+  clinic_id: string | null
+  rep_id: string
+  type: ActivityType
+  notes: string | null
+  occurred_at: string // ISO date
+  created_at: string // ISO timestamp
+}
+
 export type CertStatus = 'not_started' | 'in_progress' | 'certified'
 export type RepRole = 'rep' | 'admin'
 

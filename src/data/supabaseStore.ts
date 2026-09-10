@@ -5,11 +5,12 @@
 // The two pieces of logic the spec calls out as critical (approval gate,
 // clinic ownership locking) live in the database itself now, not here:
 // public_products/refills_with_status are views, and
-// log_clinic_contact/submit_certification_attempt are atomic Postgres
+// log_activity/submit_certification_attempt are atomic Postgres
 // functions (see the migrations under supabase/migrations). This module
 // just calls them.
 
 import type {
+  Activity,
   CertificationAttempt,
   CertificationModule,
   CertificationQuestion,
@@ -25,7 +26,8 @@ import type {
 import type {
   AssistantResult,
   PublicProduct,
-  LogContactResult,
+  LogActivityInput,
+  LogActivityResult,
   MagicLinkResult,
   NewLeadInput,
   ProductFormInput,
@@ -182,24 +184,37 @@ export async function listClinics(): Promise<Clinic[]> {
   return data as Clinic[]
 }
 
-// _repId is kept for interface parity with mockStore.ts (which has no
-// server session to derive it from) — the real backend now resolves the
-// acting rep from the caller's authenticated email, server-side, and
-// ignores any client-supplied id. See log_clinic_contact in the phase1_8
-// migration.
-export async function logClinicContact(clinicId: string, _repId: string, today: Date): Promise<LogContactResult> {
-  const { data, error } = await db().rpc('log_clinic_contact', {
-    p_clinic_id: clinicId,
-    p_today: today.toISOString().slice(0, 10),
+export async function listActivities(target: { leadId?: string; clinicId?: string }): Promise<Activity[]> {
+  let query = db().from('activities').select('*').order('occurred_at', { ascending: false })
+  query = target.leadId ? query.eq('lead_id', target.leadId) : query.eq('clinic_id', target.clinicId!)
+  const { data, error } = await query
+  if (error) throw error
+  return data as Activity[]
+}
+
+// _repId kept for interface parity with mockStore.ts — the real backend
+// derives the acting rep from the authenticated session. See log_activity
+// in the phase1_13 migration, which replaces log_clinic_contact.
+// Same nullable-params-typed-as-optional gap as upsert_product's RPC —
+// the generated Args type doesn't allow null for params the SQL function
+// defaults to null, even though that's exactly what it expects.
+export async function logActivity(input: LogActivityInput, _repId: string): Promise<LogActivityResult> {
+  const { data, error } = await db().rpc('log_activity', {
+    p_lead_id: (input.leadId ?? null) as string,
+    p_clinic_id: (input.clinicId ?? null) as string,
+    p_type: input.type,
+    p_notes: input.notes as string,
+    p_occurred_at: input.occurredAt,
   })
   if (error) throw error
   const row = data[0]
   if (!row.ok) {
-    return { ok: false, reason: 'owned_by_other', ownerName: row.owner_name, since: row.since }
+    if (row.reason === 'owned_by_other') {
+      return { ok: false, reason: 'owned_by_other', ownerName: row.owner_name, since: row.since }
+    }
+    return { ok: false, reason: 'already_promoted', clinicId: row.promoted_clinic_id }
   }
-  const { data: clinic, error: clinicError } = await db().from('clinics').select('*').eq('id', clinicId).single()
-  if (clinicError) throw clinicError
-  return { ok: true, clinic: clinic as Clinic }
+  return { ok: true, activityId: row.activity_id, promotedClinicId: row.promoted_clinic_id }
 }
 
 // ---------------------------------------------------------------------------

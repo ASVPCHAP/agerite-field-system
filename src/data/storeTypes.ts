@@ -1,7 +1,7 @@
 // Shared between mockStore.ts and supabaseStore.ts so store.ts can re-export
 // whichever one is active without either implementation owning the types.
 
-import type { Clinic, Lead, Product, Rep } from './schema'
+import type { ActivityType, Lead, Product, Rep } from './schema'
 
 export type PublicProduct = Omit<Product, 'rep_note'> & { under_review: boolean }
 
@@ -13,9 +13,22 @@ export type MagicLinkResult =
   | { ok: true; immediate: false }
   | { ok: false; error: string }
 
-export type LogContactResult =
-  | { ok: true; clinic: Clinic }
+/** Exactly one of leadId/clinicId — mirrors the activities table's own
+ *  check constraint. Logging a 'visit' on a lead promotes it (see
+ *  log_activity in the phase1_13 migration); promotedClinicId is set
+ *  only in that case. */
+export interface LogActivityInput {
+  leadId?: string
+  clinicId?: string
+  type: ActivityType
+  notes: string | null
+  occurredAt: string // ISO date
+}
+
+export type LogActivityResult =
+  | { ok: true; activityId: string; promotedClinicId: string | null }
   | { ok: false; reason: 'owned_by_other'; ownerName: string; since: string | null }
+  | { ok: false; reason: 'already_promoted'; clinicId: string | null }
 
 /** Import-only: the Sheet sync creates new products by name and never
  *  touches an existing one — the "Manage Products" form is the only way
