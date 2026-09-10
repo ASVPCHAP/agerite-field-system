@@ -3,6 +3,7 @@ import type {
   Clinic,
   Lead,
   LicensedState,
+  Order,
   PatientRefill,
   Product,
   ProductChangeLog,
@@ -75,6 +76,18 @@ export const seedLeads: Lead[] = [
   { id: 'ld22', name: 'Hunt Regional Healthcare', city: 'Greenville', segment: 'Hospital / health system', tier: 'T3', cluster: 'Greenville / Royse City / Caddo Mills', website: 'https://huntregional.org', phone: null, email: null, status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
   { id: 'ld23', name: "Gameday Men's Health Mesquite", city: 'Mesquite', segment: "Men's health · TRT · weight loss", tier: 'T3', cluster: 'Mesquite / Sunnyvale', website: 'https://gamedaymenshealth.com/mesquite-tx', phone: null, email: null, status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
   { id: 'ld24', name: 'Urgent Care Texas', city: 'Mesquite', segment: 'Urgent care · weight loss', tier: 'T2', cluster: 'Mesquite / Sunnyvale', website: 'https://urgentcaretexas.com', phone: null, email: null, status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+]
+
+// Preview data for the SiCompounding B2B Order API integration — see
+// CRM_SPEC.md section 9. Only cl3 (the one seeded reorder-stage clinic)
+// has order history; nothing in the UI creates these.
+export const seedOrders: Order[] = [
+  { id: 'o1', clinic_id: 'cl3', product_id: 'p6', size: '10ml', quantity: 3, status: 'delivered', ordered_at: '2026-06-05' },
+  { id: 'o2', clinic_id: 'cl3', product_id: 'p6', size: '10ml', quantity: 4, status: 'delivered', ordered_at: '2026-07-08' },
+  { id: 'o3', clinic_id: 'cl3', product_id: 'p3', size: '10ml', quantity: 2, status: 'delivered', ordered_at: '2026-07-22' },
+  { id: 'o4', clinic_id: 'cl3', product_id: 'p6', size: '10ml', quantity: 5, status: 'delivered', ordered_at: '2026-08-10' },
+  { id: 'o5', clinic_id: 'cl3', product_id: 'p4', size: '10ml', quantity: 3, status: 'shipped', ordered_at: '2026-08-30' },
+  { id: 'o6', clinic_id: 'cl3', product_id: 'p6', size: '10ml', quantity: 4, status: 'processing', ordered_at: '2026-09-06' },
 ]
 
 export const seedPatientRefills: PatientRefill[] = [

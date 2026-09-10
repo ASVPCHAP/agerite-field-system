@@ -14,6 +14,7 @@ import type {
   Clinic,
   Lead,
   LicensedState,
+  Order,
   PatientRefill,
   Product,
   ProductChangeLog,
@@ -26,6 +27,7 @@ import {
   seedClinics,
   seedLeads,
   seedLicensedStates,
+  seedOrders,
   seedPatientRefills,
   seedProductChangeLog,
   seedProducts,
@@ -51,6 +53,7 @@ interface DbShape {
   clinics: Clinic[]
   leads: Lead[]
   activities: Activity[]
+  orders: Order[]
   reps: Rep[]
   patientRefills: PatientRefill[]
   licensedStates: LicensedState[]
@@ -65,6 +68,7 @@ function seedDb(): DbShape {
     clinics: structuredClone(seedClinics),
     leads: structuredClone(seedLeads),
     activities: [],
+    orders: structuredClone(seedOrders),
     reps: structuredClone(seedReps),
     patientRefills: structuredClone(seedPatientRefills),
     licensedStates: structuredClone(seedLicensedStates),
@@ -76,7 +80,13 @@ function seedDb(): DbShape {
 function loadDb(): DbShape {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as DbShape
+    if (raw) {
+      const parsed = JSON.parse(raw) as DbShape
+      // orders was added after some browsers already had a persisted db —
+      // backfill rather than forcing everyone to hit "reset demo data".
+      parsed.orders ??= structuredClone(seedOrders)
+      return parsed
+    }
   } catch {
     // fall through to seed
   }
@@ -271,6 +281,14 @@ export async function listActivities(target: { leadId?: string; clinicId?: strin
     db.activities
       .filter((a) => (target.leadId ? a.lead_id === target.leadId : a.clinic_id === target.clinicId))
       .sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1)),
+  )
+}
+
+/** Preview order history for one clinic — see the Order type in schema.ts
+ *  for what this stands in for. */
+export async function listOrders(clinicId: string): Promise<Order[]> {
+  return structuredClone(
+    db.orders.filter((o) => o.clinic_id === clinicId).sort((a, b) => (a.ordered_at < b.ordered_at ? 1 : -1)),
   )
 }
 

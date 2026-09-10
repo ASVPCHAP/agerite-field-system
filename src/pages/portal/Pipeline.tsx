@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import type { ActivityType, Clinic, Rep } from '../../data/schema'
+import type { ActivityType, Clinic, Product, Rep } from '../../data/schema'
 import { clinicNeedsContact, isActionableClinic, NO_CONTACT_DAYS } from '../../data/attention'
-import { listClinics, listReps, logActivity } from '../../data/store'
+import { listClinics, listRepProducts, listReps, logActivity } from '../../data/store'
 import { Note, Pill, SectionHeading, TableWrap, td, tdMono, th } from '../../components/ui'
 import { LogActivityForm } from '../../components/LogActivityForm'
 import { ActivityHistory } from '../../components/ActivityHistory'
+import { OrdersHistory } from '../../components/OrdersHistory'
 
 export function Pipeline() {
   const { currentRep } = useAuth()
@@ -15,9 +16,10 @@ export function Pipeline() {
   const staleOnly = searchParams.get('stale') === '1'
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [reps, setReps] = useState<Rep[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState<{ tone: 'ok' | 'blocked'; text: string } | null>(null)
-  const [openPanel, setOpenPanel] = useState<{ clinicId: string; kind: 'log' | 'history' } | null>(null)
+  const [openPanel, setOpenPanel] = useState<{ clinicId: string; kind: 'log' | 'history' | 'orders' } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   const refresh = () => listClinics().then(setClinics)
@@ -25,9 +27,11 @@ export function Pipeline() {
   useEffect(() => {
     refresh()
     listReps().then(setReps)
+    listRepProducts().then(setProducts)
   }, [])
 
   const repById = useMemo(() => new Map(reps.map((r) => [r.id, r.name])), [reps])
+  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
   const today = useMemo(() => new Date(), [])
   const filtered = clinics.filter((c) => {
     if (!c.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -129,7 +133,7 @@ export function Pipeline() {
                     </td>
                     <td className={td}>{c.next_step ?? '—'}</td>
                     <td className={td}>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'log' ? null : { clinicId: c.id, kind: 'log' })}
@@ -137,6 +141,15 @@ export function Pipeline() {
                         >
                           Log activity
                         </button>
+                        {c.stage === 'reorder' && (
+                          <button
+                            type="button"
+                            onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'orders' ? null : { clinicId: c.id, kind: 'orders' })}
+                            className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                          >
+                            Orders
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'history' ? null : { clinicId: c.id, kind: 'history' })}
@@ -156,6 +169,8 @@ export function Pipeline() {
                             onSubmit={(type, notes, occurredAt) => handleLog(c.id, type, notes, occurredAt)}
                             onCancel={() => setOpenPanel(null)}
                           />
+                        ) : openPanel.kind === 'orders' ? (
+                          <OrdersHistory clinicId={c.id} productById={productById} />
                         ) : (
                           <ActivityHistory target={{ clinicId: c.id }} repById={repById} />
                         )}

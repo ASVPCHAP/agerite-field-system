@@ -24,6 +24,7 @@ export const upsertProduct = impl.upsertProduct
 export const listClinics = impl.listClinics
 export const listActivities = impl.listActivities
 export const logActivity = impl.logActivity
+export const listOrders = impl.listOrders
 export const listLeads = impl.listLeads
 export const createLeads = impl.createLeads
 export const promoteLead = impl.promoteLead

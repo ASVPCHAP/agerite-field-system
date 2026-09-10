@@ -259,22 +259,12 @@ an actual document to put in it, not before).
 **Refills**: added the actual point of the screen in plain language
 ("gone quiet, follow up") — it already did this, just never said so.
 Explicitly notes it runs off manually-tracked start dates, not a live
-feed from AGErite's pharmacy system (called "C" internally) — see
-below.
+feed from AGErite's order system (SiCompounding) — see section 10.
 
 **Dashboard — Active clinics**: a new section listing the current rep's
-`stage = 'reorder'` clinics with contact info and a **History** action
-(reuses `ActivityHistory` — real data, nothing new). Order volume is a
-placeholder pill ("Needs C integration") — there's no order data
-anywhere in this system yet.
-
-**Explicitly scoped, not built — both need "C" (AGErite's internal
-pharmacy management system)**: Refills' due/lapsed detection and
-Dashboard's order-volume column are both, today, driven by whatever's
-manually seeded — neither reflects a real order. Wiring either to real
-data means integrating with C, which hasn't been discussed yet beyond
-"we'll need this." Don't build a mapping or a fake sync for this;
-wait until there's an actual integration point to build against.
+`stage = 'reorder'` clinics with contact info, a real **History** action
+(reuses `ActivityHistory`), and an **Orders** action with real-looking
+preview order volume — see section 10 for what that actually is.
 
 **Explicitly deferred, mentioned but not started**:
 - **Auto-pull a prospect's logo/company data from their website URL** —
@@ -288,3 +278,55 @@ wait until there's an actual integration point to build against.
   about CRM *data*; this one would answer "how do I..." about the
   *app*). If pursued, it's the same low-cost OpenRouter pattern as
   section 6, not a new architecture.
+
+## 10. Orders — preview data for the SiCompounding B2B Order API
+
+AGErite compounds through SiCompounding, which offers a B2B Order API
+built for exactly this: linking pharmacies to B2B partners and
+automating order intake. Not yet integrated (no docs/credentials in
+hand — AGErite confirmed the API exists, nothing's been exchanged yet),
+but real enough that it changes what "Active clinics" and Refills
+should look like today: built to the *shape* that API is expected to
+return, populated with realistic preview numbers, so wiring the real
+thing later is a data-source swap, not a rebuild.
+
+**Data model**: new `Order` type (`schema.ts`) — `clinic_id, product_id,
+size (5ml/10ml), quantity, status (submitted/processing/shipped/
+delivered), ordered_at`. Read-only from the client (nothing in the UI
+creates or edits an order — there's no write path, unlike activities).
+Seeded only for `cl3` (the one reorder-stage demo clinic), six orders
+spanning June–September, mixed statuses. Real Postgres table in
+`orders` (migration `phase1_14_orders`), RLS read-only, same pattern as
+`activities`.
+
+`src/data/orders.ts` holds the shared value math (`orderValue`,
+`orderTotals`) — an order's dollar value is `unit price (by size) ×
+quantity`, looked up from the same `products` pricing every other
+screen uses, not a separately-stored price. Keeps the preview numbers
+consistent with whatever Resources/Pricing shows, and means a price
+change flows through automatically.
+
+**Where it shows up**:
+- **Dashboard → Active clinics**: the "Order volume" column now shows
+  a real dollar figure and order count computed from this preview data
+  (previously a bare "Needs C integration" pill) — labeled "preview
+  data" in the footnote, not presented as live.
+- **Dashboard and Pipeline**: a new **Orders** action (reorder-stage
+  clinics only) opens `OrdersHistory` — a per-clinic line-item list
+  (date, product, size × qty, value, status), same expandable-row
+  pattern as **History**/`ActivityHistory`.
+
+**What this deliberately looks finished but isn't**: the numbers are
+real arithmetic on real (seeded) rows, not placeholder text — that's
+the point, so the demo reads as "this is what's coming," not "we
+haven't thought about this yet." But it's still clearly labeled preview
+data everywhere it appears; nothing claims to be a live SiCompounding
+feed.
+
+**What actually wiring SiCompounding would take, not started**: real
+API credentials/docs from AGErite, a decision on push (webhook) vs.
+poll for new orders, and swapping `listOrders`/the `orders` table's
+contents for real API-backed data — the UI (`OrdersHistory`, the
+Dashboard column) shouldn't need to change shape at all. Same applies
+to Refills' due/lapsed detection, which today runs off manually-seeded
+`patient_refills` start dates, not real order dates.

@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import type { CertStatus, Clinic, PipelineStage, Product, ProductChangeLog, Rep } from '../../data/schema'
+import type { CertStatus, Clinic, Order, PipelineStage, Product, ProductChangeLog, Rep } from '../../data/schema'
 import { clinicNeedsContact, isActionableClinic, NO_CONTACT_DAYS } from '../../data/attention'
+import { money, orderTotals } from '../../data/orders'
 import {
   listClinics,
+  listOrders,
   listPendingReview,
   listProductChangeLog,
   listRefills,
@@ -14,6 +16,7 @@ import {
 import { Card, Note, Pill, SectionHeading, StatTile, TableWrap, td, tdMono, th } from '../../components/ui'
 import { SyncSheetButton } from '../../components/SyncSheetButton'
 import { ActivityHistory } from '../../components/ActivityHistory'
+import { OrdersHistory } from '../../components/OrdersHistory'
 
 const PIPELINE_STAGES: PipelineStage[] = [
   'identify',
@@ -51,7 +54,8 @@ export function Dashboard() {
   const [products, setProducts] = useState<Product[]>([])
   const [pendingReview, setPendingReview] = useState<Product[]>([])
   const [reps, setReps] = useState<Rep[]>([])
-  const [openHistoryFor, setOpenHistoryFor] = useState<string | null>(null)
+  const [ordersByClinic, setOrdersByClinic] = useState<Map<string, Order[]>>(new Map())
+  const [openPanel, setOpenPanel] = useState<{ clinicId: string; kind: 'history' | 'orders' } | null>(null)
 
   function refresh() {
     listClinics().then(setClinics)
@@ -95,6 +99,14 @@ export function Dashboard() {
     () => owned.filter((c) => c.stage === 'reorder'),
     [owned],
   )
+  const activeClinicIds = activeClinics.map((c) => c.id).join(',')
+
+  useEffect(() => {
+    if (!activeClinicIds) return
+    Promise.all(activeClinicIds.split(',').map((id) => listOrders(id).then((orders) => [id, orders] as const))).then(
+      (pairs) => setOrdersByClinic(new Map(pairs)),
+    )
+  }, [activeClinicIds])
 
   return (
     <div className="min-w-0">
@@ -205,46 +217,73 @@ export function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {activeClinics.map((c) => (
-                <Fragment key={c.id}>
-                  <tr>
-                    <td className={td}>
-                      {c.name}
-                      <div className="text-xs text-[var(--surface-ink-soft)]">{c.city}</div>
-                    </td>
-                    <td className={tdMono}>
-                      {c.phone ?? '—'}
-                      {c.email && <div>{c.email}</div>}
-                    </td>
-                    <td className={td}>
-                      <Pill tone="open">Needs C integration</Pill>
-                    </td>
-                    <td className={td}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenHistoryFor(openHistoryFor === c.id ? null : c.id)}
-                        className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
-                      >
-                        History
-                      </button>
-                    </td>
-                  </tr>
-                  {openHistoryFor === c.id && (
+              {activeClinics.map((c) => {
+                const orders = ordersByClinic.get(c.id)
+                const totals = orders ? orderTotals(orders, productById) : null
+                const isOpen = openPanel?.clinicId === c.id
+                return (
+                  <Fragment key={c.id}>
                     <tr>
-                      <td colSpan={4} className={td}>
-                        <ActivityHistory target={{ clinicId: c.id }} repById={repById} />
+                      <td className={td}>
+                        {c.name}
+                        <div className="text-xs text-[var(--surface-ink-soft)]">{c.city}</div>
+                      </td>
+                      <td className={tdMono}>
+                        {c.phone ?? '—'}
+                        {c.email && <div>{c.email}</div>}
+                      </td>
+                      <td className={td}>
+                        {totals ? (
+                          <div>
+                            <div className="font-mono text-[var(--surface-ink)]">{money(totals.value)}</div>
+                            <div className="text-xs text-[var(--surface-ink-soft)]">
+                              {totals.count} order{totals.count === 1 ? '' : 's'} · trailing 90 days
+                            </div>
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className={td}>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'orders' ? null : { clinicId: c.id, kind: 'orders' })}
+                            className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                          >
+                            Orders
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOpenPanel(isOpen && openPanel?.kind === 'history' ? null : { clinicId: c.id, kind: 'history' })}
+                            className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                          >
+                            History
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={4} className={td}>
+                          {openPanel.kind === 'orders' ? (
+                            <OrdersHistory clinicId={c.id} productById={productById} />
+                          ) : (
+                            <ActivityHistory target={{ clinicId: c.id }} repById={repById} />
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
         </TableWrap>
       )}
       <p className="mt-2 text-xs text-[var(--surface-ink-soft)]">
-        Order volume needs a live tie-in to AGErite's pharmacy system (C) — scoped, not built yet.
-        Contact and history are real.
+        Order volume is preview data, shaped to match AGErite's SiCompounding B2B Order API —
+        not yet wired to a live feed. Contact and history are real.
       </p>
 
       <h3 className="mt-10 font-display text-lg font-semibold">Quick actions</h3>

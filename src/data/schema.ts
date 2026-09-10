@@ -89,6 +89,25 @@ export interface Activity {
   created_at: string // ISO timestamp
 }
 
+export type OrderStatus = 'submitted' | 'processing' | 'shipped' | 'delivered'
+export type OrderSize = '5ml' | '10ml'
+
+/** A placed order against an active (reorder-stage) clinic. Preview data —
+ *  shaped to match what SiCompounding's B2B Order API is expected to
+ *  return once that integration is actually wired up, so swapping the
+ *  mock store for real API calls later is a data-source change, not a
+ *  rebuild. Read-only: nothing in the UI creates or edits an order. See
+ *  CRM_SPEC.md section 9. */
+export interface Order {
+  id: string
+  clinic_id: string
+  product_id: string
+  size: OrderSize
+  quantity: number
+  status: OrderStatus
+  ordered_at: string // ISO date
+}
+
 export type CertStatus = 'not_started' | 'in_progress' | 'certified'
 export type RepRole = 'rep' | 'admin'
 

@@ -17,6 +17,7 @@ import type {
   Clinic,
   Lead,
   LicensedState,
+  Order,
   Product,
   ProductChangeLog,
   RefillStatus,
@@ -190,6 +191,17 @@ export async function listActivities(target: { leadId?: string; clinicId?: strin
   const { data, error } = await query
   if (error) throw error
   return data as Activity[]
+}
+
+/** Preview order history for one clinic — see the Order type in schema.ts. */
+export async function listOrders(clinicId: string): Promise<Order[]> {
+  const { data, error } = await db()
+    .from('orders')
+    .select('*')
+    .eq('clinic_id', clinicId)
+    .order('ordered_at', { ascending: false })
+  if (error) throw error
+  return data as Order[]
 }
 
 // _repId kept for interface parity with mockStore.ts — the real backend

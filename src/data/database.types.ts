@@ -287,6 +287,58 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          clinic_id: string
+          id: string
+          ordered_at: string
+          product_id: string
+          quantity: number
+          size: string
+          status: string
+        }
+        Insert: {
+          clinic_id: string
+          id: string
+          ordered_at: string
+          product_id: string
+          quantity: number
+          size: string
+          status: string
+        }
+        Update: {
+          clinic_id?: string
+          id?: string
+          ordered_at?: string
+          product_id?: string
+          quantity?: number
+          size?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients_refills: {
         Row: {
           clinic_id: string
