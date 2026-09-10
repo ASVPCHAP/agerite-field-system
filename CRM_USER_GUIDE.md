@@ -43,6 +43,27 @@ If you try to log a contact on something someone else already owns,
 you'll be told who and since when — that's not a bug, that's the point.
 Ask an admin if you think it's wrong.
 
+## Find prospects: research new leads with your own AI
+
+This is how you find businesses that aren't in the system yet — using an
+AI tool you already have (a free ChatGPT, Claude, or Perplexity account
+works fine), not something AGErite pays for.
+
+1. Pick a category and an area, then click **Generate prompt**.
+2. Copy it and paste it into your AI tool. It already knows to skip
+   anything we've already got in that area, so you won't get duplicates.
+3. Copy whatever it gives you back, paste it into the **Paste your AI's
+   results** box here, and click **Parse results**.
+4. You'll get an editable table — nothing's saved yet. Set a tier for
+   each one (your AI doesn't know AGErite's fit criteria — that's your
+   call), fix anything that looks wrong, and remove anything bad.
+5. Click **Import** and they show up on the Leads tab as new prospects,
+   gold bar, ready to work.
+
+If your AI's results don't parse into the table, it probably didn't
+follow the exact `Name | City | Phone | Email | Website` format the
+prompt asks for — ask it to reformat and paste again.
+
 ## Analytics: the whole picture
 
 Three numbers up top — Prospecting, In pipeline, Active — sized to show

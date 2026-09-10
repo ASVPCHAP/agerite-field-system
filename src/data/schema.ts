@@ -41,6 +41,8 @@ export interface Clinic {
   tier: 'T1' | 'T2' | 'T3'
   cluster: string
   website: string
+  phone: string | null
+  email: string | null
   owner_rep_id: string | null
   stage: PipelineStage
   last_touch_at: string | null // ISO date
@@ -62,6 +64,8 @@ export interface Lead {
   tier: 'T1' | 'T2' | 'T3'
   cluster: string
   website: string | null
+  phone: string | null
+  email: string | null
   status: LeadStatus
   promoted_clinic_id: string | null
   created_at: string // ISO date

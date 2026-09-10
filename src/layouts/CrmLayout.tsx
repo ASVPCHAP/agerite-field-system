@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 const crmNavItems = [
   { to: '/portal/crm/leads', label: 'Leads' },
   { to: '/portal/crm/pipeline', label: 'Pipeline' },
+  { to: '/portal/crm/find-prospects', label: 'Find prospects' },
   { to: '/portal/crm/analytics', label: 'Analytics' },
 ]
 

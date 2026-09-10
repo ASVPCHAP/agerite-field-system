@@ -22,8 +22,22 @@ import type {
   RefillWithStatus,
   Rep,
 } from './schema'
-import type { PublicProduct, LogContactResult, MagicLinkResult, ProductFormInput, SheetSyncResult } from './storeTypes'
+import type {
+  PublicProduct,
+  LogContactResult,
+  MagicLinkResult,
+  NewLeadInput,
+  ProductFormInput,
+  SheetSyncResult,
+} from './storeTypes'
 import { supabase } from './supabaseClient'
+
+// Matches the SQL slugify() used server-side for products/clinics — this
+// is the one client-generated id in the app (createLeads is a plain
+// insert, not an RPC, so nothing generates it server-side).
+function slugifyClient(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
 
 function db() {
   if (!supabase) throw new Error('Supabase is not configured (missing VITE_SUPABASE_URL/ANON_KEY)')
@@ -192,6 +206,16 @@ export async function logClinicContact(clinicId: string, _repId: string, today: 
 
 export async function listLeads(): Promise<Lead[]> {
   const { data, error } = await db().from('leads').select('*').order('name')
+  if (error) throw error
+  return data as Lead[]
+}
+
+/** Batch-inserts new leads from the Find Prospects import flow. A plain
+ *  insert, not an RPC — no identity to derive server-side, since a
+ *  freshly-discovered lead has no owner concept until promoted. */
+export async function createLeads(inputs: NewLeadInput[]): Promise<Lead[]> {
+  const rows = inputs.map((input) => ({ id: `${slugifyClient(input.name)}-${crypto.randomUUID().slice(0, 6)}`, ...input }))
+  const { data, error } = await db().from('leads').insert(rows).select('*')
   if (error) throw error
   return data as Lead[]
 }

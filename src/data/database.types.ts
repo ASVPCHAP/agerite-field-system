@@ -106,11 +106,13 @@ export type Database = {
         Row: {
           city: string
           cluster: string
+          email: string | null
           id: string
           last_touch_at: string | null
           name: string
           next_step: string | null
           owner_rep_id: string | null
+          phone: string | null
           segment: string
           stage: string
           tier: string
@@ -119,11 +121,13 @@ export type Database = {
         Insert: {
           city: string
           cluster: string
+          email?: string | null
           id: string
           last_touch_at?: string | null
           name: string
           next_step?: string | null
           owner_rep_id?: string | null
+          phone?: string | null
           segment: string
           stage?: string
           tier: string
@@ -132,11 +136,13 @@ export type Database = {
         Update: {
           city?: string
           cluster?: string
+          email?: string | null
           id?: string
           last_touch_at?: string | null
           name?: string
           next_step?: string | null
           owner_rep_id?: string | null
+          phone?: string | null
           segment?: string
           stage?: string
           tier?: string
@@ -157,8 +163,10 @@ export type Database = {
           city: string
           cluster: string
           created_at: string
+          email: string | null
           id: string
           name: string
+          phone: string | null
           promoted_clinic_id: string | null
           segment: string
           status: string
@@ -169,8 +177,10 @@ export type Database = {
           city: string
           cluster: string
           created_at?: string
+          email?: string | null
           id: string
           name: string
+          phone?: string | null
           promoted_clinic_id?: string | null
           segment: string
           status?: string
@@ -181,8 +191,10 @@ export type Database = {
           city?: string
           cluster?: string
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
+          phone?: string | null
           promoted_clinic_id?: string | null
           segment?: string
           status?: string
@@ -508,11 +520,13 @@ export type Database = {
         Returns: {
           city: string
           cluster: string
+          email: string | null
           id: string
           last_touch_at: string | null
           name: string
           next_step: string | null
           owner_rep_id: string | null
+          phone: string | null
           segment: string
           stage: string
           tier: string

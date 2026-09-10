@@ -8,7 +8,7 @@ import { supabaseConfigured } from './supabaseClient'
 import * as mockStore from './mockStore'
 import * as supabaseStore from './supabaseStore'
 
-export type { PublicProduct, LogContactResult, MagicLinkResult, SheetSyncResult, ProductFormInput } from './storeTypes'
+export type { PublicProduct, LogContactResult, MagicLinkResult, NewLeadInput, SheetSyncResult, ProductFormInput } from './storeTypes'
 
 const impl = supabaseConfigured ? supabaseStore : mockStore
 
@@ -24,6 +24,7 @@ export const upsertProduct = impl.upsertProduct
 export const listClinics = impl.listClinics
 export const logClinicContact = impl.logClinicContact
 export const listLeads = impl.listLeads
+export const createLeads = impl.createLeads
 export const promoteLead = impl.promoteLead
 export const listReps = impl.listReps
 export const listRefills = impl.listRefills

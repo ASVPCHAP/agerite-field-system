@@ -30,7 +30,14 @@ import {
   seedProducts,
   seedReps,
 } from './seed'
-import type { LogContactResult, MagicLinkResult, ProductFormInput, PublicProduct, SheetSyncResult } from './storeTypes'
+import type {
+  LogContactResult,
+  MagicLinkResult,
+  NewLeadInput,
+  ProductFormInput,
+  PublicProduct,
+  SheetSyncResult,
+} from './storeTypes'
 
 const STORAGE_KEY = 'agerite_field_system_db_v1'
 const SESSION_KEY = 'agerite_field_system_rep_id'
@@ -283,6 +290,26 @@ export async function listLeads(): Promise<Lead[]> {
   return structuredClone(db.leads)
 }
 
+/** Batch-inserts new leads from the Find Prospects import flow. No
+ *  identity/ownership to derive — a freshly-discovered lead has no owner
+ *  until promoted, so unlike promoteLead this needs no rep id at all. */
+export async function createLeads(inputs: NewLeadInput[]): Promise<Lead[]> {
+  const today = isoDate(new Date())
+  const created: Lead[] = inputs.map((input) => {
+    let id = slugify(input.name) || 'lead'
+    let suffix = 2
+    while (db.leads.some((l) => l.id === id) || db.clinics.some((c) => c.id === id)) {
+      id = `${slugify(input.name) || 'lead'}-${suffix}`
+      suffix += 1
+    }
+    const lead: Lead = { ...input, id, status: 'new', promoted_clinic_id: null, created_at: today }
+    db.leads.push(lead)
+    return lead
+  })
+  persist()
+  return structuredClone(created)
+}
+
 /** Promotes a lead into a real, owned clinic in one step — "I looked at
  *  this and I'm working it now." Mirrors logClinicContact's ownership
  *  semantics rather than creating an unowned clinic someone would then
@@ -308,6 +335,8 @@ export async function promoteLead(leadId: string, repId: string, nextStep = 'Dis
     tier: lead.tier,
     cluster: lead.cluster,
     website: lead.website ?? '',
+    phone: lead.phone,
+    email: lead.email,
     owner_rep_id: repId,
     stage: 'drop_in',
     last_touch_at: isoDate(new Date()),

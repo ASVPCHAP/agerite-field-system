@@ -1,4 +1,4 @@
-# AGErite Field System — CRM (Leads / Pipeline / Analytics) Spec
+# AGErite Field System — CRM (Leads / Pipeline / Analytics / Find Prospects) Spec
 **For: Claude Code**
 **Prepared by: Anthony Chapman / Rockwall Partners**
 **Status: Built — this documents what shipped, not a plan for later**
@@ -101,7 +101,47 @@ seed rows use placeholder territories (`Rockwall–Fate`, `North Houston`,
 predates this work and is a specific, concrete finding for the seed-data
 audit, not something to silently paper over by inventing a mapping here.
 
-## 5. What this doesn't do
+## 5. Find Prospects — a fourth tab, added after the initial build
+
+The original plan considered an AI-powered prospecting search paying for
+its own LLM calls (and, separately, real phone/email enrichment via a
+paid business-data API). Both were dropped in favor of a genuinely $0
+approach: **the rep runs the research on their own free AI account, we
+just make that easy and keep the results out of duplicate/messy data.**
+
+**How it works, no backend at all:**
+1. Rep picks a category (Med spa / Hormone clinic / Small hospital system
+   / CBD-THC store) and an area (the real clusters already in the data).
+2. **Generate prompt** builds a research prompt client-side — task framing,
+   AGErite's actual ICP criteria (owner-operated, cash-pay, has a
+   prescriber — pulled from the real criteria in
+   `agerite-gtm-playbook.html`, not invented), and critically **the names
+   of leads/clinics already in that area**, so the rep's AI is told to
+   skip duplicates. Requests one plain line per result:
+   `Name | City | Phone | Email | Website`.
+3. Rep copies it into their own ChatGPT/Claude/Perplexity account (their
+   cost, not ours — reps are encouraged to use a free-tier account),
+   pastes the raw response back into the tool.
+4. Client-side parsing (plain string split on `|`, no AI involved) turns
+   that into an **editable preview table** — not yet saved.
+5. Rep sets tier per row (an outside AI can't know AGErite's fit
+   judgment — this is the one thing a human still decides), fixes
+   anything wrong, removes anything bad, then **Import** batch-inserts
+   via a plain `insert` grant on `leads` — no RPC needed, since a new
+   lead has no owner/identity to derive server-side, unlike every
+   mutation since phase1_8.
+
+**Schema addition**: `leads.phone`, `leads.email`, `clinics.phone`,
+`clinics.email` — nothing needed these before this. `promote_lead()`
+carries phone/email forward so a promoted lead's research isn't dropped.
+
+**What this doesn't do**: no LLM call, no phone/email enrichment API, no
+auto-dedup beyond the "skip these" prompt instruction (the rep's AI could
+still return a near-duplicate under a slightly different name — nothing
+catches that automatically; a human reviewing the preview table before
+import is the actual check).
+
+## 6. What this doesn't do
 
 - **No lead creation/editing from the UI.** Leads are seeded (or,
   eventually, imported the way products are) — there's no "add a lead"

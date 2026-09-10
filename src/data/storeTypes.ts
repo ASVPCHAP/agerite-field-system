@@ -1,7 +1,7 @@
 // Shared between mockStore.ts and supabaseStore.ts so store.ts can re-export
 // whichever one is active without either implementation owning the types.
 
-import type { Clinic, Product, Rep } from './schema'
+import type { Clinic, Lead, Product, Rep } from './schema'
 
 export type PublicProduct = Omit<Product, 'rep_note'> & { under_review: boolean }
 
@@ -28,6 +28,20 @@ export interface SheetSyncResult {
   skipped: string[]
   total_rows_read?: number
   error?: string
+}
+
+/** One row a rep is about to import from the Find Prospects tool, after
+ *  pasting their own AI's research back in and reviewing/editing it. No
+ *  id/status/promoted_clinic_id — those are assigned on insert. */
+export interface NewLeadInput {
+  name: string
+  city: string
+  segment: string
+  tier: Lead['tier']
+  cluster: string
+  website: string | null
+  phone: string | null
+  email: string | null
 }
 
 /** Input for the "Manage Products" form. A null/omitted id creates a new

@@ -14,6 +14,7 @@ import { Refills } from './pages/portal/Refills'
 import { Knowledge } from './pages/portal/Knowledge'
 import { ManageProducts } from './pages/portal/ManageProducts'
 import { Leads } from './pages/portal/crm/Leads'
+import { FindProspects } from './pages/portal/crm/FindProspects'
 import { Analytics } from './pages/portal/crm/Analytics'
 import { Certification } from './pages/portal/Certification'
 import { States } from './pages/portal/States'
@@ -36,6 +37,7 @@ function App() {
           <Route index element={<Navigate to="leads" replace />} />
           <Route path="leads" element={<Leads />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="find-prospects" element={<FindProspects />} />
           <Route path="analytics" element={<Analytics />} />
         </Route>
         <Route path="refills" element={<Refills />} />
