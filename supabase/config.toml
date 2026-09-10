@@ -235,15 +235,18 @@ otp_length = 8
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Production SMTP via Resend (verolyn.org, verified) — replaces Supabase's
+# shared default mail, which proved unreliable (empty-body deliveries, low
+# rate limit) for magic-link sign-in. Password read from the local
+# RESEND_API_KEY env var at push-time — never written into this file.
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 587
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "sign-in@verolyn.org"
+sender_name = "AGErite Field System"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
