@@ -126,7 +126,7 @@ export function Dashboard() {
           label="Lapsed refills"
         />
         <AttentionLink
-          to="/portal/pipeline?stale=1"
+          to="/portal/crm/pipeline?stale=1"
           value={clinics ? staleClinicCount : '—'}
           label={`No contact in ${NO_CONTACT_DAYS}d`}
         />
@@ -153,7 +153,7 @@ export function Dashboard() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-display text-lg font-semibold">Your territory</h3>
             <Link
-              to="/portal/pipeline"
+              to="/portal/crm/pipeline"
               className="font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase hover:text-[var(--surface-ink)]"
             >
               Open pipeline
@@ -177,10 +177,10 @@ export function Dashboard() {
 
       <h3 className="mt-10 font-display text-lg font-semibold">Quick actions</h3>
       <div className="mt-3 flex flex-wrap items-start gap-3">
-        <Link to="/portal/pipeline?action=log" className={actionClass}>
+        <Link to="/portal/crm/pipeline?action=log" className={actionClass}>
           Log contact
         </Link>
-        <Link to="/portal/pipeline?action=add" className={actionClass}>
+        <Link to="/portal/crm/pipeline?action=add" className={actionClass}>
           Add clinic
         </Link>
         <SyncSheetButton onSynced={refresh} />

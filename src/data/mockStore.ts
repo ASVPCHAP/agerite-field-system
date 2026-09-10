@@ -11,6 +11,7 @@ import type {
   CertificationAttempt,
   CertificationModule,
   Clinic,
+  Lead,
   LicensedState,
   PatientRefill,
   Product,
@@ -22,6 +23,7 @@ import type {
 import {
   seedCertificationModules,
   seedClinics,
+  seedLeads,
   seedLicensedStates,
   seedPatientRefills,
   seedProductChangeLog,
@@ -37,6 +39,7 @@ interface DbShape {
   products: Product[]
   productChangeLog: ProductChangeLog[]
   clinics: Clinic[]
+  leads: Lead[]
   reps: Rep[]
   patientRefills: PatientRefill[]
   licensedStates: LicensedState[]
@@ -49,6 +52,7 @@ function seedDb(): DbShape {
     products: structuredClone(seedProducts),
     productChangeLog: structuredClone(seedProductChangeLog),
     clinics: structuredClone(seedClinics),
+    leads: structuredClone(seedLeads),
     reps: structuredClone(seedReps),
     patientRefills: structuredClone(seedPatientRefills),
     licensedStates: structuredClone(seedLicensedStates),
@@ -269,6 +273,51 @@ export async function logClinicContact(clinicId: string, repId: string, today: D
   clinic.last_touch_at = isoDate(today)
   persist()
   return { ok: true, clinic: structuredClone(clinic) }
+}
+
+// ---------------------------------------------------------------------------
+// Leads — the raw prospect list, upstream of clinics (CRM_SPEC.md).
+// ---------------------------------------------------------------------------
+
+export async function listLeads(): Promise<Lead[]> {
+  return structuredClone(db.leads)
+}
+
+/** Promotes a lead into a real, owned clinic in one step — "I looked at
+ *  this and I'm working it now." Mirrors logClinicContact's ownership
+ *  semantics rather than creating an unowned clinic someone would then
+ *  have to separately claim. Matches promote_lead() in the phase1_10
+ *  migration. */
+export async function promoteLead(leadId: string, repId: string, nextStep = 'Discovery call'): Promise<Clinic> {
+  const lead = db.leads.find((l) => l.id === leadId)
+  if (!lead) throw new Error(`Unknown lead: ${leadId}`)
+  if (lead.status === 'promoted') throw new Error(`${lead.name} has already been promoted (clinic ${lead.promoted_clinic_id})`)
+
+  let id = slugify(lead.name) || 'clinic'
+  let suffix = 2
+  while (db.clinics.some((c) => c.id === id)) {
+    id = `${slugify(lead.name) || 'clinic'}-${suffix}`
+    suffix += 1
+  }
+
+  const clinic: Clinic = {
+    id,
+    name: lead.name,
+    city: lead.city,
+    segment: lead.segment,
+    tier: lead.tier,
+    cluster: lead.cluster,
+    website: lead.website ?? '',
+    owner_rep_id: repId,
+    stage: 'drop_in',
+    last_touch_at: isoDate(new Date()),
+    next_step: nextStep,
+  }
+  db.clinics.push(clinic)
+  lead.status = 'promoted'
+  lead.promoted_clinic_id = id
+  persist()
+  return structuredClone(clinic)
 }
 
 export async function listReps(): Promise<Rep[]> {

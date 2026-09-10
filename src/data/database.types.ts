@@ -152,6 +152,53 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          city: string
+          cluster: string
+          created_at: string
+          id: string
+          name: string
+          promoted_clinic_id: string | null
+          segment: string
+          status: string
+          tier: string
+          website: string | null
+        }
+        Insert: {
+          city: string
+          cluster: string
+          created_at?: string
+          id: string
+          name: string
+          promoted_clinic_id?: string | null
+          segment: string
+          status?: string
+          tier: string
+          website?: string | null
+        }
+        Update: {
+          city?: string
+          cluster?: string
+          created_at?: string
+          id?: string
+          name?: string
+          promoted_clinic_id?: string | null
+          segment?: string
+          status?: string
+          tier?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_promoted_clinic_id_fkey"
+            columns: ["promoted_clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licensed_states: {
         Row: {
           id: string
@@ -455,6 +502,28 @@ export type Database = {
           since: string
           stage: string
         }[]
+      }
+      promote_lead: {
+        Args: { p_lead_id: string; p_next_step?: string }
+        Returns: {
+          city: string
+          cluster: string
+          id: string
+          last_touch_at: string | null
+          name: string
+          next_step: string | null
+          owner_rep_id: string | null
+          segment: string
+          stage: string
+          tier: string
+          website: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "clinics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reset_demo_data: { Args: never; Returns: undefined }
       slugify: { Args: { input: string }; Returns: string }

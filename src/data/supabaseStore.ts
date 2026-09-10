@@ -14,6 +14,7 @@ import type {
   CertificationModule,
   CertificationQuestion,
   Clinic,
+  Lead,
   LicensedState,
   Product,
   ProductChangeLog,
@@ -183,6 +184,25 @@ export async function logClinicContact(clinicId: string, _repId: string, today: 
   const { data: clinic, error: clinicError } = await db().from('clinics').select('*').eq('id', clinicId).single()
   if (clinicError) throw clinicError
   return { ok: true, clinic: clinic as Clinic }
+}
+
+// ---------------------------------------------------------------------------
+// Leads — the raw prospect list, upstream of clinics (CRM_SPEC.md).
+// ---------------------------------------------------------------------------
+
+export async function listLeads(): Promise<Lead[]> {
+  const { data, error } = await db().from('leads').select('*').order('name')
+  if (error) throw error
+  return data as Lead[]
+}
+
+// _repId kept for interface parity with mockStore.ts — the real backend
+// derives the acting rep from the authenticated session. See promote_lead
+// in the phase1_10 migration.
+export async function promoteLead(leadId: string, _repId: string, nextStep = 'Discovery call'): Promise<Clinic> {
+  const { data, error } = await db().rpc('promote_lead', { p_lead_id: leadId, p_next_step: nextStep })
+  if (error) throw error
+  return data as unknown as Clinic
 }
 
 export async function listReps(): Promise<Rep[]> {

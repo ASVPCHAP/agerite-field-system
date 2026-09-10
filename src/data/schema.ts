@@ -47,6 +47,26 @@ export interface Clinic {
   next_step: string | null
 }
 
+export type LeadStatus = 'new' | 'contacted' | 'promoted' | 'disqualified'
+
+/** Raw, not-yet-engaged prospect research — the CRM's "book of business"
+ *  upstream of clinics. A lead is promoted into a real clinics row (via
+ *  promote_lead) once a rep actually decides to work it; see
+ *  CRM_SPEC.md. Deliberately has no owner/stage/contact-log fields —
+ *  those only make sense once something's actually being worked. */
+export interface Lead {
+  id: string
+  name: string
+  city: string
+  segment: string
+  tier: 'T1' | 'T2' | 'T3'
+  cluster: string
+  website: string | null
+  status: LeadStatus
+  promoted_clinic_id: string | null
+  created_at: string // ISO date
+}
+
 export type CertStatus = 'not_started' | 'in_progress' | 'certified'
 export type RepRole = 'rep' | 'admin'
 

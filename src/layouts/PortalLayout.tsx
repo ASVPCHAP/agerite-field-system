@@ -6,11 +6,10 @@ import { ResetDemoData } from '../components/ResetDemoData'
 
 const navItems = [
   { to: '/portal/dashboard', label: 'Dashboard' },
-  { to: '/portal/pipeline', label: 'Pipeline' },
+  { to: '/portal/crm', label: 'CRM' },
   { to: '/portal/refills', label: 'Refills' },
   { to: '/portal/knowledge', label: 'Knowledge base' },
   { to: '/portal/manage-products', label: 'Manage products', adminOnly: true },
-  { to: '/portal/territory', label: 'Territory & contacts' },
   { to: '/portal/certification', label: 'Certification' },
   { to: '/portal/states', label: 'Licensed states' },
 ]

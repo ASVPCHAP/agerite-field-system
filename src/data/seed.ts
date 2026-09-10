@@ -1,6 +1,7 @@
 import type {
   CertificationModule,
   Clinic,
+  Lead,
   LicensedState,
   PatientRefill,
   Product,
@@ -41,6 +42,37 @@ export const seedClinics: Clinic[] = [
   { id: 'cl3', name: "Game Day Men's Health", city: 'Houston', segment: 'TRT', tier: 'T1', cluster: 'North Houston', website: 'gamedaymenshealth.com', owner_rep_id: 'r2', stage: 'reorder', last_touch_at: '2026-09-01', next_step: '4-week reorder check-in' },
   { id: 'cl4', name: 'Cypress Renewal Clinic', city: 'Cypress', segment: 'wellness', tier: 'T2', cluster: 'Cypress', website: 'cypressrenewal.com', owner_rep_id: 'r3', stage: 'discovery', last_touch_at: '2026-09-02', next_step: 'Send provider packet' },
   { id: 'cl5', name: 'Heights Aesthetic Bar', city: 'Houston', segment: 'med spa', tier: 'T2', cluster: 'North Houston', website: 'heightsaestheticbar.com', owner_rep_id: null, stage: 'identify', last_touch_at: null, next_step: 'Initial drop-in' },
+]
+
+// Real prospects from agerite-gtm-playbook.html (Part 3, 100-target list),
+// a representative slice spanning every real route cluster and all three
+// tiers — see the matching Supabase migration (phase1_10_leads_seed_data)
+// for the full rationale. Kept in exact sync with that migration.
+export const seedLeads: Lead[] = [
+  { id: 'ld1', name: 'ReViVe Aesthetics & Healthcare', city: 'Rockwall', segment: 'Med spa · weight loss · IV', tier: 'T1', cluster: 'Rockwall core', website: 'https://we-revive.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld2', name: 'All About Aesthetics', city: 'Rockwall', segment: 'Med spa · GLP-1 weight loss', tier: 'T1', cluster: 'Rockwall core', website: 'https://aestheticsrockwall.com', status: 'contacted', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld3', name: 'The Retreat Restorative & Aesthetics', city: 'Rockwall', segment: 'Med spa · cosmetic surgery · IV', tier: 'T1', cluster: 'Rockwall core', website: 'https://theretreataesthetics.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld4', name: "T-Time Wellness", city: 'Rockwall', segment: "Men's health · TRT", tier: 'T1', cluster: 'Rockwall core', website: 'https://ttimewellness.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld5', name: 'Apex Integrative Medicine', city: 'Rockwall', segment: 'Functional med · BHRT · peptides · weight loss', tier: 'T1', cluster: 'Rockwall core', website: 'https://apexintegrativemed.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld6', name: 'EVEXIAS Medical Center Rockwall', city: 'Rockwall', segment: 'Hormones · weight loss · peptides', tier: 'T2', cluster: 'Rockwall core', website: 'https://evexiasmedical.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld7', name: 'Low T Center Rockwall', city: 'Rockwall', segment: "Men's health · TRT/HRT · peptides · weight loss", tier: 'T3', cluster: 'Rockwall core', website: 'https://lowtcenter.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld8', name: 'Sukoon Med Spa & Wellness', city: 'Rowlett', segment: 'Med spa · weight loss · gyn', tier: 'T1', cluster: 'Lake cities', website: 'https://sukoonspa.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld9', name: "Dr. DeLeon's Woman's Health Care", city: 'Rowlett', segment: 'OB/GYN · HRT · weight loss', tier: 'T2', cluster: 'Lake cities', website: 'https://ddwhc.com', status: 'contacted', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld10', name: 'Demure Aesthetics and Wellness', city: 'Wylie', segment: 'Med spa · IV', tier: 'T1', cluster: 'Lake cities', website: 'https://demureaestheticsandwellness.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld11', name: 'Glowy Med Spa', city: 'Murphy', segment: 'Med spa', tier: 'T1', cluster: 'Lake cities', website: 'https://glowymedspa.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld12', name: 'Golden Diamond MedSpa', city: 'Garland', segment: 'Med spa', tier: 'T1', cluster: 'Garland / Firewheel', website: null, status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld13', name: 'Sanjiva Med Spa', city: 'Garland', segment: 'Med spa · weight loss', tier: 'T2', cluster: 'Garland / Firewheel', website: 'https://sanjivamedspa.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld14', name: 'Sculpted MD Garland', city: 'Garland', segment: 'HRT/TRT · weight loss · aesthetics', tier: 'T3', cluster: 'Garland / Firewheel', website: 'https://sculptedmd.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld15', name: 'My Spa & Laser Center', city: 'Forney', segment: 'Med spa', tier: 'T1', cluster: 'Forney / Terrell / Kaufman', website: 'https://myspaforney.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld16', name: 'Tripple Kare Clinic', city: 'Forney', segment: 'Weight loss · med spa', tier: 'T1', cluster: 'Forney / Terrell / Kaufman', website: 'https://tripplekareclinic.com', status: 'contacted', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld17', name: 'Mymodernmedicine', city: 'Forney', segment: 'Functional / lifestyle medicine', tier: 'T1', cluster: 'Forney / Terrell / Kaufman', website: 'https://mymodernmedicine.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld18', name: 'U.S. Dermatology Partners Forney', city: 'Forney', segment: 'Dermatology', tier: 'T2', cluster: 'Forney / Terrell / Kaufman', website: 'https://usdermatologypartners.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld19', name: 'Western Wellness & Esthetics', city: 'Greenville', segment: 'Med spa', tier: 'T1', cluster: 'Greenville / Royse City / Caddo Mills', website: 'https://westernwellnessaesthetics.llc', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld20', name: 'Beaute Par Co', city: 'Greenville', segment: 'IV · wellness med spa', tier: 'T1', cluster: 'Greenville / Royse City / Caddo Mills', website: 'https://beauteparco.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld21', name: 'Sparta Wellness Clinic', city: 'Caddo Mills', segment: 'Primary care · weight loss · hormones · peptides', tier: 'T1', cluster: 'Greenville / Royse City / Caddo Mills', website: 'https://spartawellnessclinic.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld22', name: 'Hunt Regional Healthcare', city: 'Greenville', segment: 'Hospital / health system', tier: 'T3', cluster: 'Greenville / Royse City / Caddo Mills', website: 'https://huntregional.org', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld23', name: "Gameday Men's Health Mesquite", city: 'Mesquite', segment: "Men's health · TRT · weight loss", tier: 'T3', cluster: 'Mesquite / Sunnyvale', website: 'https://gamedaymenshealth.com/mesquite-tx', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
+  { id: 'ld24', name: 'Urgent Care Texas', city: 'Mesquite', segment: 'Urgent care · weight loss', tier: 'T2', cluster: 'Mesquite / Sunnyvale', website: 'https://urgentcaretexas.com', status: 'new', promoted_clinic_id: null, created_at: '2026-09-10' },
 ]
 
 export const seedPatientRefills: PatientRefill[] = [

@@ -78,7 +78,7 @@ export function Pipeline() {
             Showing open or owned-by-you clinics with no contact in {NO_CONTACT_DAYS} days.
           </Note>
           <Link
-            to="/portal/pipeline"
+            to="/portal/crm/pipeline"
             className="font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase hover:text-[var(--surface-ink)]"
           >
             Show all
