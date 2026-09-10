@@ -298,6 +298,9 @@ export function Dashboard() {
         <Link to="/portal/knowledge" className={actionClass}>
           Open Resources
         </Link>
+        <Link to="/portal/knowledge?tab=forms" className={actionClass}>
+          Place an order
+        </Link>
       </div>
 
       <div className="mt-10">

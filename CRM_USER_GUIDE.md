@@ -96,6 +96,40 @@ refills, products) — it can't look anything up outside that, and it
 doesn't remember earlier questions, so ask each one as a complete
 question. This box doesn't show up for reps without leadership access.
 
+## Resources: pricing, what we service, documents, and how to order
+
+**Resources** in the sidebar (not part of CRM, but you'll use it as
+much) has four tabs:
+
+- **Pricing & protocols** — the full price/concentration/protocol
+  table, same as before, with a Status pill so you can see at a glance
+  whether something's safe to quote or still pending PIC review.
+- **Service areas** — what AGErite can service grouped by category
+  (peptide therapy, weight loss, hormone therapy, topicals), for
+  answering "do you do X" without opening the pricing table.
+- **Printable documents** — real AGErite leave-behinds and clinical
+  references (the peptide prescribing & price guide, hormones price
+  sheet, GLP-1 dosing cards, eScribe ordering instructions, and a few
+  others). Click one to open the PDF — share the link with a provider
+  or print it before a visit.
+- **Order & other forms** — this is where you actually place an order
+  today. AGErite's ordering process runs through Jotform, not this
+  portal (yet) — Weight Loss, Hormone, and Injectables order forms,
+  plus the New Client Setup Form & Provider Packet for onboarding a
+  new clinic, are all one click away here. Below that: the Commission
+  Tracker (log every clinic/med spa visit there — that's what drives
+  your commission credit, separate from this portal's own activity
+  log) and the AGErite website.
+
+**One thing to know about the old Provider/Clinic Tracker**: this
+portal's Pipeline already does that same job — first rep to log a
+touch on a clinic owns it (see the Leads/Pipeline sections above). The
+old tracker is still listed under Order & other forms for now, but
+check Pipeline first.
+
+There's a **Place an order** button on the Dashboard's Quick actions
+that jumps straight to the Order & other forms tab.
+
 ## A word on "reset demo data"
 
 If you're testing, not actually working the territory, there's a **reset

@@ -330,3 +330,60 @@ contents for real API-backed data — the UI (`OrdersHistory`, the
 Dashboard column) shouldn't need to change shape at all. Same applies
 to Refills' due/lapsed detection, which today runs off manually-seeded
 `patient_refills` start dates, not real order dates.
+
+## 11. Resources — real documents and AGErite's actual current forms
+
+Before this pass, "Resources" only had two real tabs (Pricing, Service
+areas) plus a Documents placeholder with nothing in it. Two things
+changed that: AGErite sent over the actual PDF leave-behinds/clinical
+references they use, and separately confirmed how ordering actually
+works today — not through this portal or SiCompounding yet, but through
+a set of Jotform forms reps already use.
+
+**Printable documents — now real.** Seven PDFs (2026-09-10 drop) live in
+`public/documents/` and are listed in `Knowledge.tsx`'s `DOCUMENTS`
+array (file name, title, one-line description) — compounded peptide
+prescribing/price guide, peptides/topicals/injections reference,
+hormones price sheet, GLP-1 dosing cards, GLP vials & prefilled
+syringes, eScribe ordering instructions, and a "reasons to compound
+tirzepatide/semaglutide" pitch sheet. Static files, served the same as
+any other public asset — no upload UI, no Supabase Storage, no access
+control beyond the portal's own login. **Worth knowing**: because
+they're plain static files, the direct PDF URL works without being
+logged in if someone has it (same as the public `ProductReference`
+page already showing product info unauthenticated) — flagged here, not
+silently decided, in case AGErite wants tighter access control on
+these later. Adding more later is a copy-into-`public/documents/` +
+one-array-entry change, nothing structural.
+
+**Order & other forms — a new fourth tab**, added because it turns out
+placing an order today doesn't go through this portal *or* directly
+through SiCompounding — it goes through three separate Jotform order
+forms (Weight Loss, Hormone, Injectables) plus a New Client Setup
+Form & Provider Packet for onboarding a clinic. This tab just puts
+those one click away from Dashboard/Resources instead of wherever reps
+were finding them before — plain external links, nothing wired back
+into this app's data. A **Place an order** quick action on the
+Dashboard deep-links here (`?tab=forms`, read on mount by `Knowledge`).
+
+**Also linked, with an important overlap flagged rather than resolved**:
+- **Commission Tracker** (Jotform) — logs clinic/med spa visits for
+  commission credit. Explicitly kept separate from this portal's
+  activity log (section 7) — different purpose (payroll credit vs. CRM
+  history), not merged, since that's a comp/payroll decision, not a UI
+  one.
+- **Provider/Clinic Tracker (legacy)** — this is the same job Pipeline's
+  ownership lock already does (first rep to touch a clinic owns it,
+  see section 3). No URL was provided for it, so it's listed without a
+  working link rather than a guessed one. **Open question for
+  Anthony/AGErite, not decided here**: once this portal is the system
+  of record, should reps be told to stop checking the old tracker, or
+  should both run in parallel during a transition? Left as two live
+  systems until that's an explicit call.
+- **AGErite Pharmacy website** (ageritepharmacy.com) — linked for
+  completeness, no functional tie-in.
+
+**What this doesn't do**: none of these forms' submissions flow into
+this app — a Jotform order, a commission-tracker entry, a legacy
+tracker check, all still live only in Jotform. Nothing here reads or
+writes Jotform data; it's navigation, not integration.
