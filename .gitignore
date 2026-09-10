@@ -13,6 +13,10 @@ dist-ssr
 *.local
 supabase/.temp
 
+# Scratch workspace for subagent-driven-development plan execution
+# (ledgers, task briefs, review packages) — not part of the app.
+.superpowers/
+
 # Never commit credentials saved locally per the various *_SETUP.md docs —
 # this exact pattern leaked an OpenRouter key into a local commit once
 # already (caught by GitHub push protection before it reached the remote,
