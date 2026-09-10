@@ -15,6 +15,8 @@ import type {
   CertificationModule,
   CertificationQuestion,
   Clinic,
+  Contact,
+  Deal,
   Lead,
   LicensedState,
   Order,
@@ -33,6 +35,7 @@ import type {
   NewLeadInput,
   ProductFormInput,
   SheetSyncResult,
+  UpsertContactInput,
 } from './storeTypes'
 import { supabase } from './supabaseClient'
 
@@ -206,12 +209,68 @@ export async function listOrders(clinicId: string): Promise<Order[]> {
   return data as Order[]
 }
 
+/** All deals, or one clinic's, most recent first. */
+export async function listDeals(clinicId?: string): Promise<Deal[]> {
+  let query = db().from('deals').select('*').order('opened_at', { ascending: false })
+  if (clinicId) query = query.eq('clinic_id', clinicId)
+  const { data, error } = await query
+  if (error) throw error
+  return data as Deal[]
+}
+
+export async function listContacts(clinicId: string): Promise<Contact[]> {
+  const { data, error } = await db().from('contacts').select('*').eq('clinic_id', clinicId)
+  if (error) throw error
+  return data as Contact[]
+}
+
 // _repId kept for interface parity with mockStore.ts — the real backend
-// derives the acting rep from the authenticated session. See log_activity
-// in the phase1_13 migration, which replaces log_clinic_contact.
-// Same nullable-params-typed-as-optional gap as upsert_product's RPC —
-// the generated Args type doesn't allow null for params the SQL function
-// defaults to null, even though that's exactly what it expects.
+// derives the acting rep from the authenticated session. See
+// upsert_contact in the phase1_17 migration.
+export async function upsertContact(input: UpsertContactInput, _repId: string): Promise<Contact> {
+  const { data, error } = await db().rpc('upsert_contact', {
+    p_id: (input.id ?? null) as string,
+    p_clinic_id: input.clinicId,
+    p_name: input.name,
+    p_role: input.role as string,
+    p_phone: input.phone as string,
+    p_email: input.email as string,
+    p_is_decision_maker: input.isDecisionMaker,
+  })
+  if (error) throw error
+  return data as unknown as Contact
+}
+
+// _repId kept for interface parity — the real backend derives the
+// caller from the session and enforces the ownership lock server-side.
+// See advance_deal_stage in the phase1_17 migration.
+export async function advanceDealStage(
+  dealId: string,
+  stage: 'introduction' | 'meeting_set' | 'follow_up',
+  _repId: string,
+): Promise<Deal> {
+  const { data, error } = await db().rpc('advance_deal_stage', { p_deal_id: dealId, p_stage: stage })
+  if (error) throw error
+  return data as unknown as Deal
+}
+
+// _repId kept for interface parity — see close_deal in the phase1_17
+// migration for the real ownership check.
+export async function closeDeal(
+  dealId: string,
+  outcome: 'won' | 'lost',
+  lostReason: string | null,
+  _repId: string,
+): Promise<Deal> {
+  const { data, error } = await db().rpc('close_deal', {
+    p_deal_id: dealId,
+    p_outcome: outcome,
+    p_lost_reason: lostReason as string,
+  })
+  if (error) throw error
+  return data as unknown as Deal
+}
+
 export async function logActivity(input: LogActivityInput, _repId: string): Promise<LogActivityResult> {
   const { data, error } = await db().rpc('log_activity', {
     p_lead_id: (input.leadId ?? null) as string,
@@ -219,6 +278,7 @@ export async function logActivity(input: LogActivityInput, _repId: string): Prom
     p_type: input.type,
     p_notes: input.notes as string,
     p_occurred_at: input.occurredAt,
+    p_contact_id: (input.contactId ?? null) as string,
   })
   if (error) throw error
   const row = data[0]
