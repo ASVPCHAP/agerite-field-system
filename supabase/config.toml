@@ -198,7 +198,12 @@ password_requirements = ""
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+# supabase init's template default here is 2 — fine for Supabase's own
+# shared mail service, but this now gates Resend (verolyn.org, 100/day
+# capacity) once auth.email.smtp.enabled is true, so 2/hour would just
+# recreate the exact rate-limit problem this migration to Resend fixes.
+# Matches the 30/hour convention every sibling limit in this block uses.
+email_sent = 30
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
