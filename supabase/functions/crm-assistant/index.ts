@@ -16,7 +16,14 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const DEFAULT_MODEL = 'meta-llama/llama-3.1-8b-instruct:free'
+// OpenRouter's own "Free Models Router" — auto-routes across whichever
+// free-tier models are currently live, rather than pinning to one
+// specific vendor's free slug (which is exactly what broke: this used to
+// default to meta-llama/llama-3.1-8b-instruct:free until OpenRouter
+// discontinued that model's free tier). Confirmed $0/$0 pricing via
+// GET https://openrouter.ai/api/v1/models — re-check there if this ever
+// needs revisiting.
+const DEFAULT_MODEL = 'openrouter/free'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body, null, 2), {

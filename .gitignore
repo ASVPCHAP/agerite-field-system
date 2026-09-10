@@ -13,6 +13,13 @@ dist-ssr
 *.local
 supabase/.temp
 
+# Never commit credentials saved locally per the various *_SETUP.md docs —
+# this exact pattern leaked an OpenRouter key into a local commit once
+# already (caught by GitHub push protection before it reached the remote,
+# but shouldn't have been possible in the first place).
+*-api-key.txt
+*-key.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
