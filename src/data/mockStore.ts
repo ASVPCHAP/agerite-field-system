@@ -12,6 +12,8 @@ import type {
   CertificationAttempt,
   CertificationModule,
   Clinic,
+  Contact,
+  Deal,
   Lead,
   LicensedState,
   Order,
@@ -25,6 +27,8 @@ import type {
 import {
   seedCertificationModules,
   seedClinics,
+  seedContacts,
+  seedDeals,
   seedLeads,
   seedLicensedStates,
   seedOrders,
@@ -42,6 +46,7 @@ import type {
   ProductFormInput,
   PublicProduct,
   SheetSyncResult,
+  UpsertContactInput,
 } from './storeTypes'
 
 const STORAGE_KEY = 'agerite_field_system_db_v1'
@@ -54,6 +59,8 @@ interface DbShape {
   leads: Lead[]
   activities: Activity[]
   orders: Order[]
+  deals: Deal[]
+  contacts: Contact[]
   reps: Rep[]
   patientRefills: PatientRefill[]
   licensedStates: LicensedState[]
@@ -69,6 +76,8 @@ function seedDb(): DbShape {
     leads: structuredClone(seedLeads),
     activities: [],
     orders: structuredClone(seedOrders),
+    deals: structuredClone(seedDeals),
+    contacts: structuredClone(seedContacts),
     reps: structuredClone(seedReps),
     patientRefills: structuredClone(seedPatientRefills),
     licensedStates: structuredClone(seedLicensedStates),
@@ -82,9 +91,12 @@ function loadDb(): DbShape {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as DbShape
-      // orders was added after some browsers already had a persisted db —
-      // backfill rather than forcing everyone to hit "reset demo data".
+      // orders/deals/contacts were added after some browsers already had
+      // a persisted db — backfill rather than forcing everyone to hit
+      // "reset demo data".
       parsed.orders ??= structuredClone(seedOrders)
+      parsed.deals ??= structuredClone(seedDeals)
+      parsed.contacts ??= structuredClone(seedContacts)
       return parsed
     }
   } catch {
@@ -294,6 +306,104 @@ export async function listOrders(clinicId: string): Promise<Order[]> {
   )
 }
 
+/** All deals, or one clinic's, most recent first. A clinic normally has
+ *  exactly one (open or closed) — see DEALS_SPEC.md section 6 on why
+ *  this pass never creates a second one. */
+export async function listDeals(clinicId?: string): Promise<Deal[]> {
+  return structuredClone(
+    db.deals
+      .filter((d) => !clinicId || d.clinic_id === clinicId)
+      .sort((a, b) => (a.opened_at < b.opened_at ? 1 : -1)),
+  )
+}
+
+export async function listContacts(clinicId: string): Promise<Contact[]> {
+  return structuredClone(db.contacts.filter((c) => c.clinic_id === clinicId))
+}
+
+/** Contacts aren't ownership-sensitive like activities/deals — any
+ *  authenticated rep can add or edit one on any clinic. repId is kept
+ *  for interface parity with the real backend, which derives the
+ *  caller's identity server-side but doesn't otherwise gate this. */
+export async function upsertContact(input: UpsertContactInput, _repId: string): Promise<Contact> {
+  if (input.id) {
+    const existing = db.contacts.find((c) => c.id === input.id)
+    if (!existing) throw new Error(`Unknown contact: ${input.id}`)
+    existing.name = input.name
+    existing.role = input.role
+    existing.phone = input.phone
+    existing.email = input.email
+    existing.is_decision_maker = input.isDecisionMaker
+    persist()
+    return structuredClone(existing)
+  }
+  const contact: Contact = {
+    id: `ct-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    clinic_id: input.clinicId,
+    name: input.name,
+    role: input.role,
+    phone: input.phone,
+    email: input.email,
+    is_decision_maker: input.isDecisionMaker,
+  }
+  db.contacts.push(contact)
+  persist()
+  return structuredClone(contact)
+}
+
+/** Moves a deal between the three open stages — either direction, no
+ *  one-way ratchet. Same ownership lock as logActivity's clinic path. */
+export async function advanceDealStage(
+  dealId: string,
+  stage: 'introduction' | 'meeting_set' | 'follow_up',
+  repId: string,
+): Promise<Deal> {
+  const deal = db.deals.find((d) => d.id === dealId)
+  if (!deal) throw new Error(`Unknown deal: ${dealId}`)
+  if (deal.stage === 'closed_won' || deal.stage === 'closed_lost') {
+    throw new Error(`Deal ${dealId} is already closed`)
+  }
+  const clinic = db.clinics.find((c) => c.id === deal.clinic_id)
+  if (clinic?.owner_rep_id && clinic.owner_rep_id !== repId) {
+    const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
+    throw new Error(`Owned by ${owner?.name ?? 'another rep'} since ${clinic.last_touch_at}`)
+  }
+  deal.stage = stage
+  if (clinic && !clinic.owner_rep_id) clinic.owner_rep_id = repId
+  persist()
+  return structuredClone(deal)
+}
+
+/** Closes a deal won or lost — won moves the clinic to 'active' (today's
+ *  "reorder" meaning), lost moves it to 'lost'. Locks the deal; no
+ *  reopening in this pass (DEALS_SPEC.md section 6). */
+export async function closeDeal(
+  dealId: string,
+  outcome: 'won' | 'lost',
+  lostReason: string | null,
+  repId: string,
+): Promise<Deal> {
+  const deal = db.deals.find((d) => d.id === dealId)
+  if (!deal) throw new Error(`Unknown deal: ${dealId}`)
+  if (deal.stage === 'closed_won' || deal.stage === 'closed_lost') {
+    throw new Error(`Deal ${dealId} is already closed`)
+  }
+  const clinic = db.clinics.find((c) => c.id === deal.clinic_id)
+  if (clinic?.owner_rep_id && clinic.owner_rep_id !== repId) {
+    const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
+    throw new Error(`Owned by ${owner?.name ?? 'another rep'} since ${clinic.last_touch_at}`)
+  }
+  deal.stage = outcome === 'won' ? 'closed_won' : 'closed_lost'
+  deal.closed_at = isoDate(new Date())
+  deal.lost_reason = outcome === 'lost' ? lostReason : null
+  if (clinic) {
+    if (!clinic.owner_rep_id) clinic.owner_rep_id = repId
+    clinic.stage = outcome === 'won' ? 'active' : 'lost'
+  }
+  persist()
+  return structuredClone(deal)
+}
+
 /** Logs a call/text/visit/email/note against exactly one of a lead or a
  *  clinic. On a clinic: first rep to log anything owns it, permanently,
  *  unless an admin reassigns it — any other rep is blocked with a named
@@ -322,11 +432,11 @@ export async function logActivity(input: LogActivityInput, repId: string): Promi
       notes: input.notes,
       occurred_at: input.occurredAt,
       created_at: new Date().toISOString(),
+      contact_id: input.contactId ?? null,
     })
 
     if (!clinic.owner_rep_id) {
       clinic.owner_rep_id = repId
-      if (clinic.stage === 'identify') clinic.stage = 'drop_in'
     }
     clinic.last_touch_at = input.occurredAt
     persist()
@@ -348,6 +458,7 @@ export async function logActivity(input: LogActivityInput, repId: string): Promi
     notes: input.notes,
     occurred_at: input.occurredAt,
     created_at: new Date().toISOString(),
+    contact_id: null,
   })
 
   let promotedClinicId: string | null = null
@@ -366,14 +477,32 @@ export async function logActivity(input: LogActivityInput, repId: string): Promi
       tier: lead.tier,
       cluster: lead.cluster,
       website: lead.website ?? '',
-      phone: lead.phone,
-      email: lead.email,
       owner_rep_id: repId,
-      stage: 'drop_in',
+      stage: 'in_pipeline',
       last_touch_at: input.occurredAt,
-      next_step: 'Follow up after visit',
     }
     db.clinics.push(clinic)
+    db.deals.push({
+      id: `deal-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      clinic_id: id,
+      stage: 'introduction',
+      next_step: 'Follow up after visit',
+      target_close_at: null,
+      closed_at: null,
+      lost_reason: null,
+      opened_at: input.occurredAt,
+    })
+    if (lead.phone || lead.email) {
+      db.contacts.push({
+        id: `contact-${id}`,
+        clinic_id: id,
+        name: 'Main contact',
+        role: null,
+        phone: lead.phone,
+        email: lead.email,
+        is_decision_maker: false,
+      })
+    }
     lead.status = 'promoted'
     lead.promoted_clinic_id = id
     promotedClinicId = id
@@ -413,11 +542,10 @@ export async function createLeads(inputs: NewLeadInput[]): Promise<Lead[]> {
   return structuredClone(created)
 }
 
-/** Promotes a lead into a real, owned clinic in one step — "I looked at
- *  this and I'm working it now." Same effect as logging a 'visit'
- *  activity on the lead — this is the standalone button's path to the
- *  same outcome, not a separate concept. Matches promote_lead() in the phase1_10
- *  migration. */
+/** Promotes a lead into a real, owned clinic AND its opening deal, in
+ *  one step — "I looked at this and I'm working it now." Same effect
+ *  as logging a 'visit' activity on the lead. Matches promote_lead() in
+ *  the phase1_17 migration. */
 export async function promoteLead(leadId: string, repId: string, nextStep = 'Discovery call'): Promise<Clinic> {
   const lead = db.leads.find((l) => l.id === leadId)
   if (!lead) throw new Error(`Unknown lead: ${leadId}`)
@@ -438,14 +566,32 @@ export async function promoteLead(leadId: string, repId: string, nextStep = 'Dis
     tier: lead.tier,
     cluster: lead.cluster,
     website: lead.website ?? '',
-    phone: lead.phone,
-    email: lead.email,
     owner_rep_id: repId,
-    stage: 'drop_in',
+    stage: 'in_pipeline',
     last_touch_at: isoDate(new Date()),
-    next_step: nextStep,
   }
   db.clinics.push(clinic)
+  db.deals.push({
+    id: `deal-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    clinic_id: id,
+    stage: 'introduction',
+    next_step: nextStep,
+    target_close_at: null,
+    closed_at: null,
+    lost_reason: null,
+    opened_at: isoDate(new Date()),
+  })
+  if (lead.phone || lead.email) {
+    db.contacts.push({
+      id: `contact-${id}`,
+      clinic_id: id,
+      name: 'Main contact',
+      role: null,
+      phone: lead.phone,
+      email: lead.email,
+      is_decision_maker: false,
+    })
+  }
   lead.status = 'promoted'
   lead.promoted_clinic_id = id
   persist()
