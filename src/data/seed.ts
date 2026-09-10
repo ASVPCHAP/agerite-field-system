@@ -16,6 +16,7 @@ export const seedReps: Rep[] = [
   { id: 'r2', name: 'Dana Okafor', email: 'dana@integrativeconcepts.com', territory: 'North Houston', hire_date: '2025-11-01', cert_status: 'not_started', role: 'rep' },
   { id: 'r3', name: 'Priya Chandra', email: 'priya@integrativeconcepts.com', territory: 'Cypress', hire_date: '2026-04-15', cert_status: 'in_progress', role: 'rep' },
   { id: 'r4', name: 'Cindy R.', email: 'cindy@ageritepharmacy.com', territory: 'PIC', hire_date: '2025-01-01', cert_status: 'certified', role: 'admin' },
+  { id: 'r5', name: 'Anthony Chapman', email: 'anthony@rockwallpartners.com', territory: 'Rockwall Partners', hire_date: '2026-09-09', cert_status: 'not_started', role: 'rep' },
 ]
 
 export const seedProducts: Product[] = [
