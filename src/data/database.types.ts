@@ -42,6 +42,7 @@ export type Database = {
       activities: {
         Row: {
           clinic_id: string | null
+          contact_id: string | null
           created_at: string
           id: string
           lead_id: string | null
@@ -52,6 +53,7 @@ export type Database = {
         }
         Insert: {
           clinic_id?: string | null
+          contact_id?: string | null
           created_at?: string
           id: string
           lead_id?: string | null
@@ -62,6 +64,7 @@ export type Database = {
         }
         Update: {
           clinic_id?: string | null
+          contact_id?: string | null
           created_at?: string
           id?: string
           lead_id?: string | null
@@ -76,6 +79,13 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
@@ -161,13 +171,10 @@ export type Database = {
         Row: {
           city: string
           cluster: string
-          email: string | null
           id: string
           last_touch_at: string | null
           name: string
-          next_step: string | null
           owner_rep_id: string | null
-          phone: string | null
           segment: string
           stage: string
           tier: string
@@ -176,13 +183,10 @@ export type Database = {
         Insert: {
           city: string
           cluster: string
-          email?: string | null
           id: string
           last_touch_at?: string | null
           name: string
-          next_step?: string | null
           owner_rep_id?: string | null
-          phone?: string | null
           segment: string
           stage?: string
           tier: string
@@ -191,13 +195,10 @@ export type Database = {
         Update: {
           city?: string
           cluster?: string
-          email?: string | null
           id?: string
           last_touch_at?: string | null
           name?: string
-          next_step?: string | null
           owner_rep_id?: string | null
-          phone?: string | null
           segment?: string
           stage?: string
           tier?: string
@@ -209,6 +210,85 @@ export type Database = {
             columns: ["owner_rep_id"]
             isOneToOne: false
             referencedRelation: "reps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          clinic_id: string
+          email: string | null
+          id: string
+          is_decision_maker: boolean
+          name: string
+          phone: string | null
+          role: string | null
+        }
+        Insert: {
+          clinic_id: string
+          email?: string | null
+          id: string
+          is_decision_maker?: boolean
+          name: string
+          phone?: string | null
+          role?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          email?: string | null
+          id?: string
+          is_decision_maker?: boolean
+          name?: string
+          phone?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          clinic_id: string
+          closed_at: string | null
+          id: string
+          lost_reason: string | null
+          next_step: string | null
+          opened_at: string
+          stage: string
+          target_close_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          closed_at?: string | null
+          id: string
+          lost_reason?: string | null
+          next_step?: string | null
+          opened_at?: string
+          stage: string
+          target_close_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          closed_at?: string | null
+          id?: string
+          lost_reason?: string | null
+          next_step?: string | null
+          opened_at?: string
+          stage?: string
+          target_close_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]
@@ -627,9 +707,48 @@ export type Database = {
       }
     }
     Functions: {
+      advance_deal_stage: {
+        Args: { p_deal_id: string; p_stage: string }
+        Returns: {
+          clinic_id: string
+          closed_at: string | null
+          id: string
+          lost_reason: string | null
+          next_step: string | null
+          opened_at: string
+          stage: string
+          target_close_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      close_deal: {
+        Args: { p_deal_id: string; p_lost_reason?: string; p_outcome: string }
+        Returns: {
+          clinic_id: string
+          closed_at: string | null
+          id: string
+          lost_reason: string | null
+          next_step: string | null
+          opened_at: string
+          stage: string
+          target_close_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       log_activity: {
         Args: {
           p_clinic_id?: string
+          p_contact_id?: string
           p_lead_id?: string
           p_notes?: string
           p_occurred_at?: string
@@ -649,13 +768,10 @@ export type Database = {
         Returns: {
           city: string
           cluster: string
-          email: string | null
           id: string
           last_touch_at: string | null
           name: string
-          next_step: string | null
           owner_rep_id: string | null
-          phone: string | null
           segment: string
           stage: string
           tier: string
@@ -677,6 +793,32 @@ export type Database = {
           score: number
           total: number
         }[]
+      }
+      upsert_contact: {
+        Args: {
+          p_clinic_id?: string
+          p_email?: string
+          p_id?: string
+          p_is_decision_maker?: boolean
+          p_name?: string
+          p_phone?: string
+          p_role?: string
+        }
+        Returns: {
+          clinic_id: string
+          email: string | null
+          id: string
+          is_decision_maker: boolean
+          name: string
+          phone: string | null
+          role: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contacts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_product: {
         Args: {
