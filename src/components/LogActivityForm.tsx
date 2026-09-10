@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ActivityType } from '../data/schema'
+import type { ActivityType, Contact } from '../data/schema'
 import { Note } from './ui'
 
 const TYPES: { value: ActivityType; label: string }[] = [
@@ -17,22 +17,29 @@ function today(): string {
 }
 
 /** Small inline form for logging a call/text/visit/email/note. Shared by
- *  Leads (where a 'visit' promotes) and Pipeline (where every type just
- *  adds to history) — see CRM_SPEC.md. */
+ *  Leads (where a 'visit' promotes), Pipeline/company pages (where every
+ *  type just adds to history) — see CRM_SPEC.md and DEALS_SPEC.md.
+ *  `contacts`/`defaultContactId` are optional — a lead has no contacts
+ *  yet, and a quick log doesn't require picking one. */
 export function LogActivityForm({
   isLead = false,
+  contacts,
+  defaultContactId = null,
   submitting,
   onSubmit,
   onCancel,
 }: {
   isLead?: boolean
+  contacts?: Contact[]
+  defaultContactId?: string | null
   submitting: boolean
-  onSubmit: (type: ActivityType, notes: string, occurredAt: string) => void
+  onSubmit: (type: ActivityType, notes: string, occurredAt: string, contactId: string | null) => void
   onCancel: () => void
 }) {
   const [type, setType] = useState<ActivityType>('call')
   const [notes, setNotes] = useState('')
   const [occurredAt, setOccurredAt] = useState(today())
+  const [contactId, setContactId] = useState<string>(defaultContactId ?? '')
 
   return (
     <div className="mt-2 flex flex-col gap-2 rounded-sm border border-[var(--surface-line)] p-3">
@@ -45,6 +52,17 @@ export function LogActivityForm({
           ))}
         </select>
         <input type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className={inputClass} />
+        {contacts && contacts.length > 0 && (
+          <select value={contactId} onChange={(e) => setContactId(e.target.value)} className={inputClass}>
+            <option value="">Who did you talk to? (optional)</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.role ? ` (${c.role})` : ''}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
       {isLead && type === 'visit' && (
         <Note>This promotes the lead to Pipeline — you'll own it, first step logged as a drop-in.</Note>
@@ -60,7 +78,7 @@ export function LogActivityForm({
         <button
           type="button"
           disabled={submitting}
-          onClick={() => onSubmit(type, notes.trim(), occurredAt)}
+          onClick={() => onSubmit(type, notes.trim(), occurredAt, contactId || null)}
           className="rounded-full bg-[var(--surface-teal)] px-4 py-1.5 text-sm text-white disabled:opacity-60"
         >
           {submitting ? 'Saving…' : 'Log it'}
