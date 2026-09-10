@@ -379,6 +379,7 @@ declare
   v_rep_id text;
   v_deal deals%rowtype;
   v_clinic clinics%rowtype;
+  v_owner_name text;
 begin
   if p_stage not in ('introduction', 'meeting_set', 'follow_up') then
     raise exception 'Invalid open stage: %', p_stage;
@@ -399,7 +400,8 @@ begin
 
   select * into v_clinic from clinics where id = v_deal.clinic_id for update;
   if v_clinic.owner_rep_id is not null and v_clinic.owner_rep_id <> v_rep_id then
-    raise exception 'This deal belongs to another rep';
+    select r.name into v_owner_name from reps r where r.id = v_clinic.owner_rep_id;
+    raise exception 'Owned by % since %', v_owner_name, v_clinic.last_touch_at;
   end if;
 
   update deals set stage = p_stage where id = p_deal_id returning * into v_deal;
@@ -425,6 +427,7 @@ declare
   v_rep_id text;
   v_deal deals%rowtype;
   v_clinic clinics%rowtype;
+  v_owner_name text;
 begin
   if p_outcome not in ('won', 'lost') then
     raise exception 'Invalid outcome: %', p_outcome;
@@ -445,7 +448,8 @@ begin
 
   select * into v_clinic from clinics where id = v_deal.clinic_id for update;
   if v_clinic.owner_rep_id is not null and v_clinic.owner_rep_id <> v_rep_id then
-    raise exception 'This deal belongs to another rep';
+    select r.name into v_owner_name from reps r where r.id = v_clinic.owner_rep_id;
+    raise exception 'Owned by % since %', v_owner_name, v_clinic.last_touch_at;
   end if;
 
   update deals set
@@ -1108,7 +1112,8 @@ export async function advanceDealStage(
   }
   const clinic = db.clinics.find((c) => c.id === deal.clinic_id)
   if (clinic?.owner_rep_id && clinic.owner_rep_id !== repId) {
-    throw new Error('This deal belongs to another rep')
+    const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
+    throw new Error(`Owned by ${owner?.name ?? 'another rep'} since ${clinic.last_touch_at}`)
   }
   deal.stage = stage
   if (clinic && !clinic.owner_rep_id) clinic.owner_rep_id = repId
@@ -1132,7 +1137,8 @@ export async function closeDeal(
   }
   const clinic = db.clinics.find((c) => c.id === deal.clinic_id)
   if (clinic?.owner_rep_id && clinic.owner_rep_id !== repId) {
-    throw new Error('This deal belongs to another rep')
+    const owner = db.reps.find((r) => r.id === clinic.owner_rep_id)
+    throw new Error(`Owned by ${owner?.name ?? 'another rep'} since ${clinic.last_touch_at}`)
   }
   deal.stage = outcome === 'won' ? 'closed_won' : 'closed_lost'
   deal.closed_at = isoDate(new Date())
