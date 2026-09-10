@@ -13,6 +13,7 @@ import { Pipeline } from './pages/portal/Pipeline'
 import { Refills } from './pages/portal/Refills'
 import { Knowledge } from './pages/portal/Knowledge'
 import { ManageProducts } from './pages/portal/ManageProducts'
+import { CrmOverview } from './pages/portal/crm/CrmOverview'
 import { Leads } from './pages/portal/crm/Leads'
 import { FindProspects } from './pages/portal/crm/FindProspects'
 import { Analytics } from './pages/portal/crm/Analytics'
@@ -34,7 +35,7 @@ function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="crm" element={<CrmLayout />}>
-          <Route index element={<Navigate to="leads" replace />} />
+          <Route index element={<CrmOverview />} />
           <Route path="leads" element={<Leads />} />
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="find-prospects" element={<FindProspects />} />

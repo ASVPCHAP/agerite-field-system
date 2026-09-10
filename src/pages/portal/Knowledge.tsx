@@ -122,6 +122,8 @@ const linkClass =
 export function Knowledge() {
   const [searchParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
+  const [priceCategory, setPriceCategory] = useState('')
+  const [priceConcentration, setPriceConcentration] = useState('')
   const [grossSales, setGrossSales] = useState('')
   const [tab, setTab] = useState<Tab>(() => {
     const fromUrl = searchParams.get('tab')
@@ -141,6 +143,20 @@ export function Knowledge() {
     }
     return groups
   }, [products])
+
+  const priceCategoryOptions = useMemo(
+    () => [...new Set(products.map((p) => p.category))].sort(),
+    [products],
+  )
+  const priceConcentrationOptions = useMemo(() => {
+    const scoped = priceCategory ? products.filter((p) => p.category === priceCategory) : products
+    return [...new Set(scoped.map((p) => p.concentration))].sort()
+  }, [products, priceCategory])
+  const filteredProducts = products.filter(
+    (p) =>
+      (!priceCategory || p.category === priceCategory) &&
+      (!priceConcentration || p.concentration === priceConcentration),
+  )
 
   const salesNumber = Number(grossSales)
   const commission = grossSales.trim() !== '' && !Number.isNaN(salesNumber) ? calculateCommission(salesNumber) : null
@@ -175,6 +191,37 @@ export function Knowledge() {
             Includes internal rep notes and genuinely-visible pending-review rows flagged "do not
             quote."
           </Note>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <select
+              value={priceCategory}
+              onChange={(e) => {
+                setPriceCategory(e.target.value)
+                setPriceConcentration('')
+              }}
+              className="rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-1.5 text-sm"
+            >
+              <option value="">All categories</option>
+              {priceCategoryOptions.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABEL[c]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={priceConcentration}
+              onChange={(e) => setPriceConcentration(e.target.value)}
+              className="max-w-[16rem] rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-1.5 text-sm"
+            >
+              <option value="">All concentrations</option>
+              {priceConcentrationOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <TableWrap>
             <table className="mt-4 w-full text-sm">
               <thead>
@@ -182,34 +229,36 @@ export function Knowledge() {
                   <th className={th}>Product</th>
                   <th className={th}>Category</th>
                   <th className={th}>Concentration</th>
-                  <th className={th}>Price A</th>
-                  <th className={th}>Price B</th>
+                  <th className={th}>Price</th>
                   <th className={th}>Protocol</th>
                   <th className={th}>Status</th>
                   <th className={th}>Rep note</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => {
+                {filteredProducts.map((p) => {
                   const pending = p.status === 'pending_review'
                   return (
                     <tr key={p.id} className={pending ? 'opacity-80' : ''}>
-                      <td className={td}>{p.name}</td>
+                      <td className={`${td} max-w-[12rem]`}>{p.name}</td>
                       <td className={td}>{CATEGORY_LABEL[p.category]}</td>
-                      <td className={tdMono}>{p.concentration}</td>
-                      <td className={tdMono}>
-                        {money(p.price_5ml)}
+                      <td className={`${td} max-w-[14rem]`}>{p.concentration}</td>
+                      <td className={`${td} max-w-[10rem]`}>
                         {p.price_5ml != null && (
-                          <div className="text-[var(--surface-ink-soft)]">{p.price_5ml_label ?? '5 mL'}</div>
+                          <div>
+                            <span className="font-mono">{money(p.price_5ml)}</span>{' '}
+                            <span className="text-[var(--surface-ink-soft)]">{p.price_5ml_label ?? '5 mL'}</span>
+                          </div>
                         )}
-                      </td>
-                      <td className={tdMono}>
-                        {money(p.price_10ml)}
                         {p.price_10ml != null && (
-                          <div className="text-[var(--surface-ink-soft)]">{p.price_10ml_label ?? '10 mL'}</div>
+                          <div>
+                            <span className="font-mono">{money(p.price_10ml)}</span>{' '}
+                            <span className="text-[var(--surface-ink-soft)]">{p.price_10ml_label ?? '10 mL'}</span>
+                          </div>
                         )}
+                        {p.price_5ml == null && p.price_10ml == null && '—'}
                       </td>
-                      <td className={td}>{p.protocol_duration}</td>
+                      <td className={`${td} max-w-[12rem]`}>{p.protocol_duration}</td>
                       <td className={td}>
                         <Pill tone={pending ? 'review' : 'current'}>
                           {pending ? 'Pending review — do not quote' : 'Current'}

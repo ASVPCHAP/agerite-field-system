@@ -1,10 +1,11 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 const crmNavItems = [
-  { to: '/portal/crm/leads', label: 'Leads' },
-  { to: '/portal/crm/pipeline', label: 'Pipeline' },
-  { to: '/portal/crm/find-prospects', label: 'Find prospects' },
-  { to: '/portal/crm/analytics', label: 'Analytics' },
+  { to: '/portal/crm', label: 'Overview', end: true },
+  { to: '/portal/crm/leads', label: 'Leads', end: false },
+  { to: '/portal/crm/pipeline', label: 'Pipeline', end: false },
+  { to: '/portal/crm/find-prospects', label: 'Find prospects', end: false },
+  { to: '/portal/crm/analytics', label: 'Analytics', end: false },
 ]
 
 export function CrmLayout() {
@@ -15,6 +16,7 @@ export function CrmLayout() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.end}
             className={({ isActive }) =>
               `border-b-2 px-3 py-2.5 text-sm ${
                 isActive

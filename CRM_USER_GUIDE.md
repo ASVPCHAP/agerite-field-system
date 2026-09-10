@@ -7,7 +7,10 @@ covers the CRM section (Leads, Pipeline, Analytics).
 ## Getting there
 
 Sign in at the portal login, then click **CRM** in the sidebar. You'll
-land on **Leads** — that's the default screen.
+land on the **Overview** screen — a quick snapshot (prospecting/pipeline/
+active counts) plus a card for each of Leads, Pipeline, Find prospects,
+and Analytics. Click any card, or use the tabs above, to get to that
+screen.
 
 ## Leads: who's out there
 
@@ -112,6 +115,9 @@ much) has five tabs:
   hormone injectable strengths) show 1-2 representative prices with a
   note pointing to the full pricing sheet in Printable Documents — the
   real matrix has too many size/dose combinations to fit this table.
+  Two dropdowns above the table filter by category and concentration —
+  the concentration list narrows to whatever's actually in the category
+  you picked.
 - **Service areas** — what AGErite can service grouped by category, for
   answering "do you do X" without opening the pricing table.
 - **Printable documents** — real AGErite leave-behinds and clinical

@@ -492,3 +492,35 @@ used only to derive the numeric bracket structure, never copied into
 `public/documents/` or linked anywhere in the app. If AGErite wants the
 actual policy document available to reps, that should be an unsigned
 template, added deliberately, not this file.
+
+## 13. Pricing table filters, a real layout bug, and a CRM landing page
+
+**Bug, not a design choice**: the Pricing & protocols table's price and
+concentration cells used `tdMono` (`font-mono whitespace-nowrap`) —
+fine for a short number, wrong for the longer label/concentration text
+this pass introduced (e.g. `"CJC-1295 1 mg/mL + Ipamorelin 2 mg/mL"`,
+`"0.25 mg × 4 wk"`). `whitespace-nowrap` forced those cells to their
+full unwrapped width, ballooning the table well past any reasonable
+viewport and pushing Price/Protocol/Status/Rep note out past the visible
+edge with no obvious affordance to scroll — reported as "the price is
+being cut off." Fixed by letting Concentration/Rep note/Protocol wrap
+normally (plain `td`, `max-w-[...]` caps instead of forced width) and
+merging the two price columns into one (`Price`, both slots stacked)
+instead of two separately-cut-off ones. The whole table now fits at a
+normal laptop width with no horizontal scroll needed for the 46-row
+catalog.
+
+**Category and concentration filters**, same tab: two dropdowns above
+the table, same pattern as Leads' cluster/tier filters. Concentration's
+options are scoped to whatever category is currently selected (resets
+when category changes) rather than listing all ~40 distinct
+concentration strings at once, which wouldn't be a usable dropdown.
+
+**CRM gets a landing page.** `/portal/crm` previously redirected
+straight into Leads — clicking "CRM" never showed its own screen, just
+whatever Leads looked like. `CrmOverview.tsx` is now the index route: a
+three-tile funnel snapshot (prospecting/pipeline/active, same counts as
+Analytics) plus a card linking to each of Leads/Pipeline/Find
+prospects/Analytics. `CrmLayout`'s sub-nav gained an "Overview" tab
+(exact-match routing via NavLink's `end` prop, so it doesn't stay
+highlighted once you're on Leads).
