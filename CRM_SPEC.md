@@ -231,3 +231,60 @@ built so far).
   without committing to working the account yet.
 - **No lead disqualification UI.** The `status` enum includes
   `disqualified` for future use; nothing sets it yet.
+
+## 9. Wider portal fixes/scoping, same pass as activity logging
+
+A few requests landed that touch screens outside the CRM proper
+(Dashboard, Refills, Knowledge) — noted here rather than a separate doc
+since they're small and came out of the same conversation.
+
+**Fixed**: native `<option>` popups were rendering with inherited light
+text on the browser's own white background — invisible. One rule in
+`index.css` (`select option { color; background }`) fixes it everywhere,
+instead of patching every `<select>` individually.
+
+**Added**: a plain-language T1/T2/T3 explanation (strong ICP fit → work
+first / decent fit / partial-or-unconfirmed, lowest priority) next to
+the tier controls on Leads and Find Prospects — tiers had never been
+defined anywhere a rep could see them.
+
+**Knowledge base → Resources**: same underlying `products` data, now
+three tabs instead of one table — **Pricing & protocols** (the original
+table, category column added), **Service areas** (products grouped by
+`category`, answers "do you do X" without opening pricing), and
+**Printable documents** (placeholder — no document storage exists yet;
+this is the shape, not a real upload path. Add real storage when there's
+an actual document to put in it, not before).
+
+**Refills**: added the actual point of the screen in plain language
+("gone quiet, follow up") — it already did this, just never said so.
+Explicitly notes it runs off manually-tracked start dates, not a live
+feed from AGErite's pharmacy system (called "C" internally) — see
+below.
+
+**Dashboard — Active clinics**: a new section listing the current rep's
+`stage = 'reorder'` clinics with contact info and a **History** action
+(reuses `ActivityHistory` — real data, nothing new). Order volume is a
+placeholder pill ("Needs C integration") — there's no order data
+anywhere in this system yet.
+
+**Explicitly scoped, not built — both need "C" (AGErite's internal
+pharmacy management system)**: Refills' due/lapsed detection and
+Dashboard's order-volume column are both, today, driven by whatever's
+manually seeded — neither reflects a real order. Wiring either to real
+data means integrating with C, which hasn't been discussed yet beyond
+"we'll need this." Don't build a mapping or a fake sync for this;
+wait until there's an actual integration point to build against.
+
+**Explicitly deferred, mentioned but not started**:
+- **Auto-pull a prospect's logo/company data from their website URL** —
+  raised as a "when we redesign the platform" item, not a now item.
+  Would need a scraping/enrichment source (paid, most likely) — same
+  category of decision as the phone/email enrichment API already
+  punted on in Find Prospects (section 5).
+- **In-portal chatbot to help reps navigate/ask questions about the
+  site itself** — raised as "would be cool," not scoped. Distinct from
+  the section-6 sales-analytics assistant (that one answers questions
+  about CRM *data*; this one would answer "how do I..." about the
+  *app*). If pursued, it's the same low-cost OpenRouter pattern as
+  section 6, not a new architecture.

@@ -49,6 +49,14 @@ export function Refills() {
   return (
     <div>
       <SectionHeading>Refills</SectionHeading>
+      <div className="mt-2">
+        <Note>
+          Flags customers who've gone quiet — no reorder when one was expected. "Due" and
+          "lapsed" are your cue to reach out and keep ordering consistent, before an account goes
+          cold. Runs off manually-tracked start dates for now; tying this to AGErite's own order
+          system (C) so it updates automatically is scoped for later, not built yet.
+        </Note>
+      </div>
       <div className="mt-4 mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatTile value={counts.due} label="Due (≤7d)" />
         <StatTile value={counts.due_soon} label="Due soon (8–14d)" />

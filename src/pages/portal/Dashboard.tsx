@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import type { CertStatus, Clinic, PipelineStage, Product, ProductChangeLog } from '../../data/schema'
+import type { CertStatus, Clinic, PipelineStage, Product, ProductChangeLog, Rep } from '../../data/schema'
 import { clinicNeedsContact, isActionableClinic, NO_CONTACT_DAYS } from '../../data/attention'
 import {
   listClinics,
@@ -9,9 +9,11 @@ import {
   listProductChangeLog,
   listRefills,
   listRepProducts,
+  listReps,
 } from '../../data/store'
 import { Card, Note, Pill, SectionHeading, StatTile, TableWrap, td, tdMono, th } from '../../components/ui'
 import { SyncSheetButton } from '../../components/SyncSheetButton'
+import { ActivityHistory } from '../../components/ActivityHistory'
 
 const PIPELINE_STAGES: PipelineStage[] = [
   'identify',
@@ -48,12 +50,15 @@ export function Dashboard() {
   const [log, setLog] = useState<ProductChangeLog[] | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [pendingReview, setPendingReview] = useState<Product[]>([])
+  const [reps, setReps] = useState<Rep[]>([])
+  const [openHistoryFor, setOpenHistoryFor] = useState<string | null>(null)
 
   function refresh() {
     listClinics().then(setClinics)
     listProductChangeLog().then(setLog)
     listRepProducts().then(setProducts)
     listPendingReview().then(setPendingReview)
+    listReps().then(setReps)
     const today = new Date()
     listRefills(today).then((refills) => {
       setDueSoonCount(refills.filter((r) => r.status === 'due' || r.status === 'due_soon').length)
@@ -85,6 +90,11 @@ export function Dashboard() {
   }, [owned])
 
   const cert = currentRep ? CERT_CHIP[currentRep.cert_status] : null
+  const repById = useMemo(() => new Map(reps.map((r) => [r.id, r.name])), [reps])
+  const activeClinics = useMemo(
+    () => owned.filter((c) => c.stage === 'reorder'),
+    [owned],
+  )
 
   return (
     <div className="min-w-0">
@@ -144,7 +154,7 @@ export function Dashboard() {
             </div>
             <p className="mt-2 text-sm text-[var(--surface-ink-soft)]">
               Products in <span className="font-mono">pending_review</span> — Cindy / approval gate.{' '}
-              {currentRep?.role === 'admin' ? 'Open Manage products.' : 'Flagged in the Knowledge base.'}
+              {currentRep?.role === 'admin' ? 'Open Manage products.' : 'Flagged in Resources.'}
             </p>
           </Card>
         </Link>
@@ -175,6 +185,68 @@ export function Dashboard() {
         </Card>
       </div>
 
+      <h3 className="mt-10 font-display text-lg font-semibold">Active clinics</h3>
+      <p className="mt-1 font-mono text-[0.68rem] tracking-wide text-[var(--surface-ink-soft)] uppercase">
+        Clinics you own that are already ordering
+      </p>
+      {activeClinics.length === 0 ? (
+        <div className="mt-3">
+          <Note>None yet — clinics show up here once they reach the reorder stage.</Note>
+        </div>
+      ) : (
+        <TableWrap>
+          <table className="mt-3 w-full text-sm">
+            <thead>
+              <tr>
+                <th className={th}>Clinic</th>
+                <th className={th}>Contact</th>
+                <th className={th}>Order volume</th>
+                <th className={th} />
+              </tr>
+            </thead>
+            <tbody>
+              {activeClinics.map((c) => (
+                <Fragment key={c.id}>
+                  <tr>
+                    <td className={td}>
+                      {c.name}
+                      <div className="text-xs text-[var(--surface-ink-soft)]">{c.city}</div>
+                    </td>
+                    <td className={tdMono}>
+                      {c.phone ?? '—'}
+                      {c.email && <div>{c.email}</div>}
+                    </td>
+                    <td className={td}>
+                      <Pill tone="open">Needs C integration</Pill>
+                    </td>
+                    <td className={td}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenHistoryFor(openHistoryFor === c.id ? null : c.id)}
+                        className="inline-flex min-h-11 items-center rounded-full border border-[var(--surface-line)] px-3 py-2 text-xs md:min-h-0 md:py-1"
+                      >
+                        History
+                      </button>
+                    </td>
+                  </tr>
+                  {openHistoryFor === c.id && (
+                    <tr>
+                      <td colSpan={4} className={td}>
+                        <ActivityHistory target={{ clinicId: c.id }} repById={repById} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </TableWrap>
+      )}
+      <p className="mt-2 text-xs text-[var(--surface-ink-soft)]">
+        Order volume needs a live tie-in to AGErite's pharmacy system (C) — scoped, not built yet.
+        Contact and history are real.
+      </p>
+
       <h3 className="mt-10 font-display text-lg font-semibold">Quick actions</h3>
       <div className="mt-3 flex flex-wrap items-start gap-3">
         <Link to="/portal/crm/pipeline?action=log" className={actionClass}>
@@ -185,7 +257,7 @@ export function Dashboard() {
         </Link>
         <SyncSheetButton onSynced={refresh} />
         <Link to="/portal/knowledge" className={actionClass}>
-          Open Knowledge
+          Open Resources
         </Link>
       </div>
 

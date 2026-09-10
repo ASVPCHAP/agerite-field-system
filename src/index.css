@@ -61,3 +61,11 @@ body {
 .font-mono {
   font-family: var(--font-mono);
 }
+
+/* Native <option> popups render on an OS-controlled white background
+   regardless of the select's own dark styling — without this, option
+   text inherits the portal's light ink color and disappears. */
+select option {
+  color: #20221f;
+  background: #ffffff;
+}

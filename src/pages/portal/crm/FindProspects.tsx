@@ -201,7 +201,10 @@ Use "unknown" for anything you can't find.`
         <div className="mt-6">
           <Note>
             Review before importing — set a tier for each (there's no way for an outside AI to
-            know AGErite's fit judgment), fix anything wrong, or remove a row entirely.
+            know AGErite's fit judgment), fix anything wrong, or remove a row entirely.{' '}
+            <strong>T1</strong> = strong ICP fit, work first (owner-operated, cash-pay, has a
+            prescriber). <strong>T2</strong> = decent fit, worth working. <strong>T3</strong> =
+            partial or unconfirmed fit, lowest priority.
           </Note>
           <TableWrap>
             <table className="mt-3 w-full text-sm">

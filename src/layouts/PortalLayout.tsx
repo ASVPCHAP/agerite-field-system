@@ -8,7 +8,7 @@ const navItems = [
   { to: '/portal/dashboard', label: 'Dashboard' },
   { to: '/portal/crm', label: 'CRM' },
   { to: '/portal/refills', label: 'Refills' },
-  { to: '/portal/knowledge', label: 'Knowledge base' },
+  { to: '/portal/knowledge', label: 'Resources' },
   { to: '/portal/manage-products', label: 'Manage products', adminOnly: true },
   { to: '/portal/certification', label: 'Certification' },
   { to: '/portal/states', label: 'Licensed states' },

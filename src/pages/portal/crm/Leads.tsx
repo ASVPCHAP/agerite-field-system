@@ -145,7 +145,9 @@ export function Leads() {
       <div className="mt-2">
         <Note>
           Everything in one place — who hasn't been touched yet, who's being worked, and who's
-          already ordering.
+          already ordering. <strong>T1</strong> = strong ICP fit, work first (owner-operated,
+          cash-pay, has a prescriber). <strong>T2</strong> = decent fit. <strong>T3</strong> =
+          partial or unconfirmed fit, lowest priority.
         </Note>
       </div>
 
