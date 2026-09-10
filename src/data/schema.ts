@@ -37,7 +37,7 @@ export interface ProductChangeLog {
   changed_at: string // ISO date
 }
 
-export type PipelineStage = 'identify' | 'drop_in' | 'discovery' | 'solution' | 'onboard' | 'reorder'
+export type ClinicStatus = 'in_pipeline' | 'active' | 'lost'
 
 export interface Clinic {
   id: string
@@ -47,12 +47,44 @@ export interface Clinic {
   tier: 'T1' | 'T2' | 'T3'
   cluster: string
   website: string
+  owner_rep_id: string | null
+  /** What kind of account this is, derived from its deal(s) — not the
+   *  sale's own progress, that's Deal.stage now. 'in_pipeline' = has an
+   *  open deal, 'active' = most recent deal closed_won (this is what
+   *  used to be stage 'reorder'), 'lost' = most recent deal
+   *  closed_lost. See DEALS_SPEC.md. */
+  stage: ClinicStatus
+  last_touch_at: string | null // ISO date
+}
+
+export type DealStage = 'introduction' | 'meeting_set' | 'follow_up' | 'closed_won' | 'closed_lost'
+
+/** One sales cycle on a clinic. Replaces the selling-phase portion of
+ *  the old clinics.stage — see DEALS_SPEC.md. No owner field: a deal
+ *  belongs to whoever owns the clinic (same ownership lock as
+ *  activities), not a separate permission concept. */
+export interface Deal {
+  id: string
+  clinic_id: string
+  stage: DealStage
+  next_step: string | null
+  target_close_at: string | null
+  closed_at: string | null
+  lost_reason: string | null
+  opened_at: string // ISO date
+}
+
+/** A named person at a clinic — replaces the old single clinics.phone/
+ *  clinics.email pair. Clinics only; a lead by definition has nobody
+ *  named yet. See DEALS_SPEC.md. */
+export interface Contact {
+  id: string
+  clinic_id: string
+  name: string
+  role: string | null
   phone: string | null
   email: string | null
-  owner_rep_id: string | null
-  stage: PipelineStage
-  last_touch_at: string | null // ISO date
-  next_step: string | null
+  is_decision_maker: boolean
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'promoted' | 'disqualified'
@@ -93,6 +125,9 @@ export interface Activity {
   notes: string | null
   occurred_at: string // ISO date
   created_at: string // ISO timestamp
+  /** Who the interaction was actually with, when known — optional,
+   *  logging still works with none picked. See DEALS_SPEC.md. */
+  contact_id: string | null
 }
 
 export type OrderStatus = 'submitted' | 'processing' | 'shipped' | 'delivered'

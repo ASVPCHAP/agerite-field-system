@@ -23,6 +23,7 @@ export interface LogActivityInput {
   type: ActivityType
   notes: string | null
   occurredAt: string // ISO date
+  contactId?: string
 }
 
 export type LogActivityResult =
@@ -72,4 +73,17 @@ export interface ProductFormInput {
   protocol_duration: string
   status: Product['status']
   rep_note: string | null
+}
+
+/** Input for the Contacts form. A null/omitted id creates a new
+ *  contact; an existing id edits it. Mirrors upsert_contact's
+ *  parameters. */
+export interface UpsertContactInput {
+  id?: string | null
+  clinicId: string
+  name: string
+  role: string | null
+  phone: string | null
+  email: string | null
+  isDecisionMaker: boolean
 }
