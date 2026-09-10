@@ -1,6 +1,8 @@
 import type {
   CertificationModule,
   Clinic,
+  Contact,
+  Deal,
   Lead,
   LicensedState,
   Order,
@@ -108,12 +110,27 @@ export const seedProductChangeLog: ProductChangeLog[] = [
 ]
 
 export const seedClinics: Clinic[] = [
-  { id: 'cl1', name: 'Vixen Wellness', city: 'Rockwall', segment: 'med spa', tier: 'T1', cluster: 'Rockwall–Fate', website: 'vixenwellness.com', phone: null, email: null, owner_rep_id: 'r1', stage: 'onboard', last_touch_at: '2026-08-28', next_step: 'Confirm first order' },
-  { id: 'cl2', name: 'Sculpted MD', city: 'Fate', segment: 'med spa', tier: 'T1', cluster: 'Rockwall–Fate', website: 'sculptedmd.com', phone: null, email: null, owner_rep_id: null, stage: 'identify', last_touch_at: null, next_step: 'Initial drop-in' },
-  { id: 'cl3', name: "Game Day Men's Health", city: 'Houston', segment: 'TRT', tier: 'T1', cluster: 'North Houston', website: 'gamedaymenshealth.com', phone: null, email: null, owner_rep_id: 'r2', stage: 'reorder', last_touch_at: '2026-09-01', next_step: '4-week reorder check-in' },
-  { id: 'cl4', name: 'Cypress Renewal Clinic', city: 'Cypress', segment: 'wellness', tier: 'T2', cluster: 'Cypress', website: 'cypressrenewal.com', phone: null, email: null, owner_rep_id: 'r3', stage: 'discovery', last_touch_at: '2026-09-02', next_step: 'Send provider packet' },
-  { id: 'cl5', name: 'Heights Aesthetic Bar', city: 'Houston', segment: 'med spa', tier: 'T2', cluster: 'North Houston', website: 'heightsaestheticbar.com', phone: null, email: null, owner_rep_id: null, stage: 'identify', last_touch_at: null, next_step: 'Initial drop-in' },
+  { id: 'cl1', name: 'Vixen Wellness', city: 'Rockwall', segment: 'med spa', tier: 'T1', cluster: 'Rockwall–Fate', website: 'vixenwellness.com', owner_rep_id: 'r1', stage: 'active', last_touch_at: '2026-08-28' },
+  { id: 'cl2', name: 'Sculpted MD', city: 'Fate', segment: 'med spa', tier: 'T1', cluster: 'Rockwall–Fate', website: 'sculptedmd.com', owner_rep_id: null, stage: 'in_pipeline', last_touch_at: null },
+  { id: 'cl3', name: "Game Day Men's Health", city: 'Houston', segment: 'TRT', tier: 'T1', cluster: 'North Houston', website: 'gamedaymenshealth.com', owner_rep_id: 'r2', stage: 'active', last_touch_at: '2026-09-01' },
+  { id: 'cl4', name: 'Cypress Renewal Clinic', city: 'Cypress', segment: 'wellness', tier: 'T2', cluster: 'Cypress', website: 'cypressrenewal.com', owner_rep_id: 'r3', stage: 'in_pipeline', last_touch_at: '2026-09-02' },
+  { id: 'cl5', name: 'Heights Aesthetic Bar', city: 'Houston', segment: 'med spa', tier: 'T2', cluster: 'North Houston', website: 'heightsaestheticbar.com', owner_rep_id: null, stage: 'in_pipeline', last_touch_at: null },
 ]
+
+// One opening deal per clinic — see supabase/migrations/
+// 20260911010000_phase1_17_deals_contacts.sql for the same mapping
+// applied to the real backend's pre-existing rows.
+export const seedDeals: Deal[] = [
+  { id: 'deal-seed-cl1', clinic_id: 'cl1', stage: 'closed_won', next_step: 'Confirm first order', target_close_at: null, closed_at: '2026-08-28', lost_reason: null, opened_at: '2026-08-01' },
+  { id: 'deal-seed-cl2', clinic_id: 'cl2', stage: 'introduction', next_step: 'Initial drop-in', target_close_at: null, closed_at: null, lost_reason: null, opened_at: '2026-09-10' },
+  { id: 'deal-seed-cl3', clinic_id: 'cl3', stage: 'closed_won', next_step: '4-week reorder check-in', target_close_at: null, closed_at: '2026-08-01', lost_reason: null, opened_at: '2026-08-01' },
+  { id: 'deal-seed-cl4', clinic_id: 'cl4', stage: 'follow_up', next_step: 'Send provider packet', target_close_at: null, closed_at: null, lost_reason: null, opened_at: '2026-09-02' },
+  { id: 'deal-seed-cl5', clinic_id: 'cl5', stage: 'introduction', next_step: 'Initial drop-in', target_close_at: null, closed_at: null, lost_reason: null, opened_at: '2026-09-10' },
+]
+
+// No seeded contacts by default — reps add their own during the demo,
+// same as the old clinics.phone/email fields started empty too.
+export const seedContacts: Contact[] = []
 
 // Real prospects from agerite-gtm-playbook.html (Part 3, 100-target list),
 // a representative slice spanning every real route cluster and all three
