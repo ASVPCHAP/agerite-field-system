@@ -1903,7 +1903,7 @@ git commit -m "Add ContactsSection component (list, add-contact form, log-activi
 - Create: `src/pages/portal/crm/CompanyPage.tsx`
 
 **Interfaces:**
-- Consumes: `DealSection` (Task 9), `ContactsSection` (Task 10), `ActivityHistory` (Task 8), `OrdersHistory`/`orderTotals` (already in repo), `LogActivityForm` (Task 7), `listClinics`, `listDeals`, `listReps`, `listRepProducts`, `logActivity`
+- Consumes: `DealSection` (Task 9), `ContactsSection` (Task 10), `ActivityHistory` and its `contactById` prop (Task 8), `OrdersHistory`/`orderTotals` (already in repo), `LogActivityForm` and its `contacts`/`defaultContactId` props (Task 7), `listClinics`, `listDeals`, `listContacts`, `listReps`, `listRepProducts`, `logActivity`
 - Produces: `CompanyPage` component, mounted at `/portal/crm/clinics/:clinicId` (Task 13 wires the route)
 
 - [ ] **Step 1: Write the component**
@@ -1912,8 +1912,8 @@ git commit -m "Add ContactsSection component (list, add-contact form, log-activi
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../../../auth/AuthContext'
-import type { Clinic, Contact, Deal, Product, Rep } from '../../../data/schema'
-import { listClinics, listDeals, listOrders, listRepProducts, listReps, logActivity } from '../../../data/store'
+import type { ActivityType, Clinic, Contact, Deal, Product, Rep } from '../../../data/schema'
+import { listClinics, listContacts, listDeals, listOrders, listRepProducts, listReps, logActivity } from '../../../data/store'
 import { Card, Note, Pill, SectionHeading } from '../../../components/ui'
 import { DealSection } from '../../../components/DealSection'
 import { ContactsSection } from '../../../components/ContactsSection'
@@ -1934,6 +1934,7 @@ export function CompanyPage() {
   const [clinic, setClinic] = useState<Clinic | null | undefined>(undefined)
   const [deal, setDeal] = useState<Deal | null>(null)
   const [reps, setReps] = useState<Rep[]>([])
+  const [contacts, setContacts] = useState<Contact[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [orderCount12mo, setOrderCount12mo] = useState(0)
   const [orderValue12mo, setOrderValue12mo] = useState(0)
@@ -1946,6 +1947,7 @@ export function CompanyPage() {
     listClinics().then((all) => setClinic(all.find((c) => c.id === clinicId) ?? null))
     listDeals(clinicId).then((deals) => setDeal(deals[0] ?? null))
     listReps().then(setReps)
+    listContacts(clinicId).then(setContacts)
     listRepProducts().then(setProducts)
     listOrders(clinicId).then((orders) => {
       const cutoff = new Date()
@@ -1965,9 +1967,10 @@ export function CompanyPage() {
   useEffect(refresh, [products.length])
 
   const repById = useMemo(() => new Map(reps.map((r) => [r.id, r.name])), [reps])
+  const contactById = useMemo(() => new Map(contacts.map((c) => [c.id, c.name])), [contacts])
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
-  async function handleLog(type: Parameters<typeof logActivity>[0]['type'], notes: string, occurredAt: string, contactId: string | null) {
+  async function handleLog(type: ActivityType, notes: string, occurredAt: string, contactId: string | null) {
     if (!currentRep || !clinicId) return
     setSubmitting(true)
     setMessage(null)
@@ -2035,6 +2038,7 @@ export function CompanyPage() {
           </div>
           {logTarget && (
             <LogActivityForm
+              contacts={contacts}
               submitting={submitting}
               defaultContactId={logTarget.contactId}
               onSubmit={handleLog}
@@ -2042,7 +2046,7 @@ export function CompanyPage() {
             />
           )}
           <div className="mt-3">
-            <ActivityHistory target={{ clinicId: clinic.id }} repById={repById} />
+            <ActivityHistory target={{ clinicId: clinic.id }} repById={repById} contactById={contactById} />
           </div>
         </Card>
       </div>
@@ -2839,16 +2843,85 @@ Replace with:
   )
 ```
 
-- [ ] **Step 5: Build check**
+- [ ] **Step 5: Fix the "Active clinics" table — the Contact column reads `clinics.phone`/`clinics.email`, which Task 1's migration drops**
+
+The Active clinics table (built in an earlier session pass, before this plan) has a "Contact" column showing `c.phone`/`c.email` directly off the clinic row. Task 2 removes those fields from `Clinic` — that info now lives in `contacts`, which belongs on the company page (Task 11), not duplicated here. Fix: drop the Contact column entirely and make the clinic name link to its company page instead, so "who to call" is one click away rather than duplicated.
+
+Find:
+
+```tsx
+              <tr>
+                <th className={th}>Clinic</th>
+                <th className={th}>Contact</th>
+                <th className={th}>Order volume</th>
+                <th className={th} />
+              </tr>
+```
+
+Replace with:
+
+```tsx
+              <tr>
+                <th className={th}>Clinic</th>
+                <th className={th}>Order volume</th>
+                <th className={th} />
+              </tr>
+```
+
+Find:
+
+```tsx
+                      <td className={td}>
+                        {c.name}
+                        <div className="text-xs text-[var(--surface-ink-soft)]">{c.city}</div>
+                      </td>
+                      <td className={tdMono}>
+                        {c.phone ?? '—'}
+                        {c.email && <div>{c.email}</div>}
+                      </td>
+                      <td className={td}>
+```
+
+Replace with:
+
+```tsx
+                      <td className={td}>
+                        <Link to={`/portal/crm/clinics/${c.id}`} className="text-[var(--surface-teal)] hover:underline">
+                          {c.name}
+                        </Link>
+                        <div className="text-xs text-[var(--surface-ink-soft)]">{c.city}</div>
+                      </td>
+                      <td className={td}>
+```
+
+Find (the expandable Orders/History panel row — `colSpan` drops from 4 to 3, matching the now-3-column table):
+
+```tsx
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={4} className={td}>
+```
+
+Replace with:
+
+```tsx
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={3} className={td}>
+```
+
+(`Link` is already imported from `react-router-dom` in this file, from the existing Quick Actions/Needs Attention cards — no new import needed.)
+
+- [ ] **Step 6: Build check**
 
 Run: `npm run build 2>&1 | grep "Dashboard.tsx"`
 Expected: no output.
 
-- [ ] **Step 6: Manual verification**
+- [ ] **Step 7: Manual verification**
 
-Run: `npm run dev -- --port 5180` (background), then via Playwright: clear localStorage, sign in as `dana@integrativeconcepts.com` (owns `cl3`, an active clinic), navigate to `/portal/dashboard`. Expected: "Active clinics" still shows Game Day Men's Health with real order data (unchanged from before this plan); "Your territory" pills now read Introduction/Meeting set/Follow-up/Won/Lost instead of Identify/Drop-in/Discovery/Solution/Onboard/Reorder.
+Run: `npm run dev -- --port 5180` (background), then via Playwright: clear localStorage, sign in as `dana@integrativeconcepts.com` (owns `cl3`, an active clinic), navigate to `/portal/dashboard`. Expected: "Active clinics" still shows Game Day Men's Health with real order data (unchanged from before this plan) in a now-3-column table (Clinic/Order volume/actions), the clinic name links to `/portal/crm/clinics/cl3`; "Your territory" pills now read Introduction/Meeting set/Follow-up/Won/Lost instead of Identify/Drop-in/Discovery/Solution/Onboard/Reorder.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/pages/portal/Dashboard.tsx
