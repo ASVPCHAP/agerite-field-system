@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../../../auth/AuthContext'
 import type { Clinic, Lead } from '../../../data/schema'
-import { listClinics, listLeads } from '../../../data/store'
-import { SectionHeading, TableWrap, td, th } from '../../../components/ui'
+import { askAssistant, listClinics, listLeads } from '../../../data/store'
+import { Note, SectionHeading, TableWrap, td, th } from '../../../components/ui'
 
 const FUNNEL_COLOR = {
   prospecting: 'var(--surface-gold)',
@@ -10,13 +11,26 @@ const FUNNEL_COLOR = {
 }
 
 export function Analytics() {
+  const { currentRep } = useAuth()
   const [leads, setLeads] = useState<Lead[]>([])
   const [clinics, setClinics] = useState<Clinic[]>([])
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [asking, setAsking] = useState(false)
 
   useEffect(() => {
     listLeads().then(setLeads)
     listClinics().then(setClinics)
   }, [])
+
+  async function handleAsk() {
+    if (!question.trim()) return
+    setAsking(true)
+    setAnswer(null)
+    const result = await askAssistant(question.trim())
+    setAnswer(result.ok ? result.answer : `Error: ${result.error}`)
+    setAsking(false)
+  }
 
   const prospecting = leads.filter((l) => l.status === 'new' || l.status === 'contacted').length
   const pipeline = clinics.filter((c) => c.stage !== 'reorder').length
@@ -117,6 +131,40 @@ export function Analytics() {
           </tbody>
         </table>
       </TableWrap>
+
+      {currentRep?.is_leadership && (
+        <div className="mt-10">
+          <h3 className="font-display text-lg font-semibold text-[var(--surface-ink)]">
+            Ask about sales numbers or reports
+          </h3>
+          <div className="mt-2">
+            <Note>Leadership-only. Answers are generated from the data above — nothing else.</Note>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
+              placeholder="e.g. Which reps have stale accounts? How's the pipeline looking?"
+              className="min-w-[20rem] flex-1 rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-1.5 text-sm"
+            />
+            <button
+              type="button"
+              disabled={!question.trim() || asking}
+              onClick={handleAsk}
+              className="rounded-full bg-[var(--surface-teal)] px-4 py-1.5 text-sm text-white disabled:opacity-60"
+            >
+              {asking ? 'Asking…' : 'Ask'}
+            </button>
+          </div>
+          {answer && (
+            <div className="mt-4 rounded-sm border border-[var(--surface-line)] bg-[var(--surface-bg-2)] p-4 text-sm whitespace-pre-wrap">
+              {answer}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

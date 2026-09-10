@@ -31,6 +31,7 @@ import {
   seedReps,
 } from './seed'
 import type {
+  AssistantResult,
   LogContactResult,
   MagicLinkResult,
   NewLeadInput,
@@ -447,4 +448,8 @@ export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
     skipped: [],
     error: 'Sheet sync requires the real Supabase backend — not available in mock mode.',
   }
+}
+
+export async function askAssistant(_question: string): Promise<AssistantResult> {
+  return { ok: false, error: 'The sales-analytics assistant requires the real Supabase backend — not available in mock mode.' }
 }

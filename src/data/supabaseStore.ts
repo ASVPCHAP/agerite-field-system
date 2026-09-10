@@ -23,6 +23,7 @@ import type {
   Rep,
 } from './schema'
 import type {
+  AssistantResult,
   PublicProduct,
   LogContactResult,
   MagicLinkResult,
@@ -56,6 +57,7 @@ function mapRep(row: {
   hire_date: string
   cert_status: string
   role: string
+  is_leadership: boolean
 }): Rep {
   return { ...row, cert_status: mapCertStatus(row.cert_status), role: row.role as Rep['role'] }
 }
@@ -350,4 +352,26 @@ export async function syncProductsFromSheet(): Promise<SheetSyncResult> {
     return { created: [], alreadyExists: [], skipped: [], error: message }
   }
   return data
+}
+
+// ---------------------------------------------------------------------------
+// Sales-analytics assistant (leadership only) — invokes the crm-assistant
+// Edge Function, which verifies is_leadership server-side independently
+// of this client-side call (see supabase/functions/crm-assistant).
+// ---------------------------------------------------------------------------
+
+export async function askAssistant(question: string): Promise<AssistantResult> {
+  const { data, error } = await db().functions.invoke<{ answer?: string; error?: string }>('crm-assistant', {
+    body: { question },
+  })
+  if (error || !data?.answer) {
+    let message = data?.error ?? error?.message ?? 'No response from the assistant'
+    const context = (error as { context?: unknown } | null)?.context
+    if (context instanceof Response) {
+      const body = await context.json().catch(() => null)
+      if (body?.error) message = body.error
+    }
+    return { ok: false, error: message }
+  }
+  return { ok: true, answer: data.answer }
 }

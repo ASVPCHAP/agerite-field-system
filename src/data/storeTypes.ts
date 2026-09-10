@@ -30,6 +30,9 @@ export interface SheetSyncResult {
   error?: string
 }
 
+/** Result of asking the leadership sales-analytics assistant a question. */
+export type AssistantResult = { ok: true; answer: string } | { ok: false; error: string }
+
 /** One row a rep is about to import from the Find Prospects tool, after
  *  pasting their own AI's research back in and reviewing/editing it. No
  *  id/status/promoted_clinic_id — those are assigned on insert. */

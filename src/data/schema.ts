@@ -82,6 +82,12 @@ export interface Rep {
   hire_date: string // ISO date
   cert_status: CertStatus
   role: RepRole
+  /** Access to the sales-analytics assistant — independent of `role`.
+   *  role governs Manage Products (a PIC/pharmacy-compliance function
+   *  specific to Cindy); is_leadership governs a different permission
+   *  that Ron/Melissa (Integrative Concepts ownership) and Anthony also
+   *  need without picking up product-editing rights. */
+  is_leadership: boolean
 }
 
 // No patient name or DOB field exists anywhere in this schema — reference

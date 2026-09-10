@@ -377,6 +377,7 @@ export type Database = {
           email: string
           hire_date: string
           id: string
+          is_leadership: boolean
           name: string
           role: string
           territory: string
@@ -386,6 +387,7 @@ export type Database = {
           email: string
           hire_date: string
           id: string
+          is_leadership?: boolean
           name: string
           role?: string
           territory: string
@@ -395,6 +397,7 @@ export type Database = {
           email?: string
           hire_date?: string
           id?: string
+          is_leadership?: boolean
           name?: string
           role?: string
           territory?: string

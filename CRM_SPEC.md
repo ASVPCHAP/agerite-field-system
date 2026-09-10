@@ -141,7 +141,44 @@ still return a near-duplicate under a slightly different name — nothing
 catches that automatically; a human reviewing the preview table before
 import is the actual check).
 
-## 6. What this doesn't do
+## 6. Sales-analytics assistant (leadership only) — Analytics tab
+
+A free-text "ask about sales numbers or reports" panel at the bottom of
+Analytics, visible only to reps with `is_leadership = true`. Unlike Find
+Prospects, this one genuinely needs a model call — the question is open-
+ended, not a structured lookup. OpenRouter was chosen specifically to
+route to a free-tier model instead of a metered frontier one; see
+`OPENROUTER_SETUP.md` for the one setup step only you can do.
+
+**Access is a separate permission from `role`.** `role = 'admin'` gates
+Manage Products (Cindy's PIC/pharmacy-compliance function) —
+`is_leadership` gates this assistant. They overlap for Cindy but not for
+Ron/Melissa (Integrative Concepts ownership, `role = 'rep'`) or Anthony
+(`role = 'rep'`), who need the assistant without picking up
+product-editing rights they were never asked to have. Enforced twice,
+independently: `RequireLeadership`-style conditional render client-side,
+and the `crm-assistant` Edge Function re-derives the caller's identity
+from their session and re-checks `is_leadership` server-side before
+calling OpenRouter at all — the client-side check is a UX nicety, not
+the real gate.
+
+**How it works**: `crm-assistant` (a new Edge Function) verifies the
+caller's session (forwarded automatically by `supabase-js` — this
+function, unlike `prospect-search`, keeps Supabase's platform JWT
+verification ON, since it's only ever called from inside the already-
+authenticated portal), checks `is_leadership`, pulls a compact text
+summary of reps/leads/clinics/refills/products/recent changes using the
+service-role key, and sends that plus the rep's question to OpenRouter in
+one request — no multi-turn tool-calling, no conversation memory across
+questions, matching the same "this dataset doesn't need that complexity"
+reasoning as Find Prospects.
+
+**What this doesn't do**: no write access (answers questions, doesn't
+change data), no conversation history (each question is independent),
+and it can only answer from the data summary it's given — it has no way
+to browse further or fetch something not included in that summary.
+
+## 7. What this doesn't do
 
 - **No lead creation/editing from the UI.** Leads are seeded (or,
   eventually, imported the way products are) — there's no "add a lead"

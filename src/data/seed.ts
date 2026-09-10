@@ -13,11 +13,13 @@ import type {
 // so continuity holds across the hidden demo and this real build.
 
 export const seedReps: Rep[] = [
-  { id: 'r1', name: 'Marcus Reyes', email: 'marcus@integrativeconcepts.com', territory: 'Rockwall–Fate', hire_date: '2025-02-10', cert_status: 'certified', role: 'rep' },
-  { id: 'r2', name: 'Dana Okafor', email: 'dana@integrativeconcepts.com', territory: 'North Houston', hire_date: '2025-11-01', cert_status: 'not_started', role: 'rep' },
-  { id: 'r3', name: 'Priya Chandra', email: 'priya@integrativeconcepts.com', territory: 'Cypress', hire_date: '2026-04-15', cert_status: 'in_progress', role: 'rep' },
-  { id: 'r4', name: 'Cindy R.', email: 'cindy@ageritepharmacy.com', territory: 'PIC', hire_date: '2025-01-01', cert_status: 'certified', role: 'admin' },
-  { id: 'r5', name: 'Anthony Chapman', email: 'anthony@rockwallpartners.com', territory: 'Rockwall Partners', hire_date: '2026-09-09', cert_status: 'not_started', role: 'rep' },
+  { id: 'r1', name: 'Marcus Reyes', email: 'marcus@integrativeconcepts.com', territory: 'Rockwall–Fate', hire_date: '2025-02-10', cert_status: 'certified', role: 'rep', is_leadership: false },
+  { id: 'r2', name: 'Dana Okafor', email: 'dana@integrativeconcepts.com', territory: 'North Houston', hire_date: '2025-11-01', cert_status: 'not_started', role: 'rep', is_leadership: false },
+  { id: 'r3', name: 'Priya Chandra', email: 'priya@integrativeconcepts.com', territory: 'Cypress', hire_date: '2026-04-15', cert_status: 'in_progress', role: 'rep', is_leadership: false },
+  { id: 'r4', name: 'Cindy R.', email: 'ageritepharmacy@gmail.com', territory: 'PIC', hire_date: '2025-01-01', cert_status: 'certified', role: 'admin', is_leadership: true },
+  { id: 'r5', name: 'Anthony Chapman', email: 'anthony@rockwallpartners.com', territory: 'Rockwall Partners', hire_date: '2026-09-09', cert_status: 'not_started', role: 'rep', is_leadership: true },
+  { id: 'r6', name: 'Melissa Carroll', email: 'sales@ageritepharmacy.com', territory: 'Integrative Concepts', hire_date: '2026-09-10', cert_status: 'certified', role: 'rep', is_leadership: true },
+  { id: 'r7', name: 'Ron Carroll', email: 'lsb@ageritepharmacy.com', territory: 'Integrative Concepts', hire_date: '2026-09-10', cert_status: 'certified', role: 'rep', is_leadership: true },
 ]
 
 export const seedProducts: Product[] = [

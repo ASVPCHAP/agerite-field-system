@@ -71,7 +71,16 @@ the shape of the funnel at a glance. Below that, the same counts broken
 down by tier and by cluster, so you (or Cindy, or Anthony) can see where
 the territory actually stands without opening three different screens.
 
-This is a look-not-touch screen — nothing here is clickable or editable.
+Most of this screen is look-not-touch — nothing in the tables is
+clickable or editable.
+
+**If you're leadership** (Cindy, Anthony, Melissa, or Ron), there's one
+more thing at the bottom: a box to ask a free-text question — "which reps
+have stale accounts," "how's the pipeline looking this month," that kind
+of thing. It only knows what's in the CRM (reps, leads, pipeline,
+refills, products) — it can't look anything up outside that, and it
+doesn't remember earlier questions, so ask each one as a complete
+question. This box doesn't show up for reps without leadership access.
 
 ## A word on "reset demo data"
 
