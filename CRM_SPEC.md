@@ -387,3 +387,108 @@ Dashboard deep-links here (`?tab=forms`, read on mount by `Knowledge`).
 this app — a Jotform order, a commission-tracker entry, a legacy
 tracker check, all still live only in Jotform. Nothing here reads or
 writes Jotform data; it's navigation, not integration.
+
+## 12. Real product catalog, and the commission calculator
+
+Two more things landed in the same pass: AGErite's actual pricing sheets
+replaced the placeholder demo catalog, and a commission calculator was
+added from AGErite's 1099 Sales Representative Commission Plan.
+
+### Pricing table no longer fits two fixed size columns
+
+The original schema had exactly `price_5ml`/`price_10ml` — fine for
+peptides, wrong for everything else AGErite actually sells: hormones
+price per troche/capsule/60g jar, GLP-1 weight-loss prices per
+dose-strength × vial size (30+ real combinations) or per 4-week
+prefilled-syringe supply, IV additives price per 10/30/60/90/120 mL.
+Forcing all of that into columns literally labeled "5mL"/"10mL" would
+have meant mislabeling real pricing — a genuine risk for a rep quoting a
+clinic.
+
+**Fix, not a rebuild**: `products` gained two nullable text columns,
+`price_5ml_label`/`price_10ml_label` (migration `phase1_15_product_size_
+labels`) — the numeric columns are really "price slot A/B" now, the
+label says what each slot actually is (`"5 mL"`, `"#30"`, `"60 g"`,
+`"0.25 mg × 4 wk"`...). Null falls back to `"5 mL"`/`"10 mL"` client-side,
+so nothing already shown changed meaning. Every screen that renders a
+price (`Knowledge` Pricing tab, `ManageProducts`, the public
+`ProductReference`) shows the label under the dollar amount; column
+headers changed from "5mL"/"10mL" to generic "Price A"/"Price B" since
+they no longer mean one specific thing. `ManageProducts`' edit form does
+**not** expose the label fields yet — Cindy/admin edits still default to
+"5 mL"/"10 mL", which stays correct for the peptide majority; add label
+editing to that form if a non-peptide product needs hand-editing later.
+
+Also added: an `'injection'` product category (IV/injectable additives —
+PCDC, Amino Mix, Ascorbic Acid, B-Complex, Glutathione — a real AGErite
+product line with no prior category to sit in).
+
+### The catalog itself (migration `phase1_16_product_catalog_update`)
+
+46 real products, replacing 7 placeholder ones — straight from AGErite's
+Compounded Peptide Prescribing & Price Guide, Hormones price sheet, GLP
+Vials & Prefilled Syringes sheet, and internal Peptides/Topicals/
+Troches/Injections sheet (all provided 2026-09-10). The pre-existing
+product ids (`p1`-`p7`) were corrected in place rather than replaced, so
+Orders/Refills history that already referenced them (section 10) keeps
+working — order dollar values recompute live from the corrected prices,
+which is expected and correct, not a bug (e.g. the Dashboard's "order
+volume" figure for the demo clinic is a different number now than the
+$7,654 shown earlier in this build, purely because `p3`/`p4`/`p6`'s real
+prices differ from the placeholder ones).
+
+**Deliberately not modeled at full granularity** — kept out of this
+table, not missing:
+- **GLP-1 weight-loss**: 4 representative rows (entry/top dose for
+  Semaglutide and Tirzepatide, vial and prefilled-syringe each) instead
+  of the real 30+ dose-strength × vial-size matrix. Each row's
+  `rep_note` points to the real GLP Vials & Prefilled Syringes PDF
+  (Printable Documents) or the Weight Loss Order Form for exact pricing.
+- **Hormones' injectable Testosterone Cypionate**: 2 of its 6 real
+  strength/vial combinations, same "see the price sheet" pattern.
+- **IV additives**: 2 of each product's real 3-6 available sizes
+  (smallest + largest).
+
+A `product_change_log` entry documents every correction made to an
+existing row (name, concentration, or price change), dated 2026-09-10,
+`changed_by = 'Rockwall Partners (price sheet sync)'` — visible on the
+Dashboard's "What changed" feed like any other product edit. TB-500
+(`p2`) was `pending_review` specifically over a concentration
+discrepancy (5 mg/mL vs. the order form) — the real guide resolves it
+(2.5 mg/mL is correct), so this pass also flips it back to `current`
+with `reviewed_by`/`reviewed_at` set, a small but real demonstration of
+"pending review" actually getting resolved, not just sitting there.
+
+**Cleanup, unrelated to the real catalog**: two stray rows
+(`test-peptide-xyz`, `verify-product-form`) left over from earlier
+Manage Products QA testing were deleted — they weren't seed data, just
+uncleaned manual-test artifacts that would have shown as real products
+otherwise.
+
+### Commission calculator — new tab on Resources
+
+From AGErite's 1099 Sales Representative Commission Plan (GLP-1 &
+Wellness Program Outreach, effective 2026-07-14): graduated/marginal
+brackets against monthly Gross Sales — $0–$5k at 6%, $5k–$15k at 8%,
+$15k–$30k at 10%, $30k+ at 12%, resetting every calendar month, same
+mechanic as a tax bracket (only the portion of sales inside a bracket is
+paid at that bracket's rate).
+
+`src/data/commission.ts` holds the brackets and a pure
+`calculateCommission(grossSales)` function — verified against the plan
+document's own worked example ($40,000 → $3,800). The new "Commission
+calculator" tab on Resources is a single number input (gross sales this
+month) with a live bracket-by-bracket breakdown, same shape as that
+worked example, so a rep can check it against the plan document
+directly. Manual entry only — **not** wired to real order data (once
+SiCompounding is integrated and order data is real and rep-attributed,
+prefilling this from a rep's own trailing-30-day gross sales would be
+the natural next step, not built now).
+
+**Deliberately not published as a document**: the source PDF is
+Anthony's own signed copy of the commission plan (bears a real
+signature and execution date), not a blank AGErite template — it was
+used only to derive the numeric bracket structure, never copied into
+`public/documents/` or linked anywhere in the app. If AGErite wants the
+actual policy document available to reps, that should be an unsigned
+template, added deliberately, not this file.

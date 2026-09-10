@@ -440,7 +440,9 @@ export type Database = {
           id: string
           name: string
           price_10ml: number | null
+          price_10ml_label: string | null
           price_5ml: number | null
+          price_5ml_label: string | null
           protocol_duration: string
           rep_note: string | null
           reviewed_at: string | null
@@ -454,7 +456,9 @@ export type Database = {
           id: string
           name: string
           price_10ml?: number | null
+          price_10ml_label?: string | null
           price_5ml?: number | null
+          price_5ml_label?: string | null
           protocol_duration: string
           rep_note?: string | null
           reviewed_at?: string | null
@@ -468,7 +472,9 @@ export type Database = {
           id?: string
           name?: string
           price_10ml?: number | null
+          price_10ml_label?: string | null
           price_5ml?: number | null
+          price_5ml_label?: string | null
           protocol_duration?: string
           rep_note?: string | null
           reviewed_at?: string | null
@@ -520,7 +526,9 @@ export type Database = {
           id: string | null
           name: string | null
           price_10ml: number | null
+          price_10ml_label: string | null
           price_5ml: number | null
+          price_5ml_label: string | null
           protocol_duration: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -534,7 +542,9 @@ export type Database = {
           id?: string | null
           name?: string | null
           price_10ml?: never
+          price_10ml_label?: string | null
           price_5ml?: never
+          price_5ml_label?: string | null
           protocol_duration?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -548,7 +558,9 @@ export type Database = {
           id?: string | null
           name?: string | null
           price_10ml?: never
+          price_10ml_label?: string | null
           price_5ml?: never
+          price_5ml_label?: string | null
           protocol_duration?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -684,7 +696,9 @@ export type Database = {
           id: string
           name: string
           price_10ml: number | null
+          price_10ml_label: string | null
           price_5ml: number | null
+          price_5ml_label: string | null
           protocol_duration: string
           rep_note: string | null
           reviewed_at: string | null

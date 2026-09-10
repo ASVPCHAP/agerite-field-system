@@ -5,7 +5,7 @@ import type { Product, ProductCategory, ProductStatus } from '../../data/schema'
 import { listRepProducts, upsertProduct } from '../../data/store'
 import { Note, Pill, SectionHeading, TableWrap, td, tdMono, th } from '../../components/ui'
 
-const CATEGORIES: ProductCategory[] = ['peptide', 'weight-loss', 'hormone', 'topical', 'troche']
+const CATEGORIES: ProductCategory[] = ['peptide', 'weight-loss', 'hormone', 'topical', 'troche', 'injection']
 const STATUSES: ProductStatus[] = ['current', 'pending_review', 'archived']
 
 interface FormState {
@@ -196,7 +196,7 @@ export function ManageProducts() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={labelClass} htmlFor="pf-price5">
-                Price 5mL
+                Price A (shown as "5 mL" unless a custom size label was set via a data sync)
               </label>
               <input
                 id="pf-price5"
@@ -211,7 +211,7 @@ export function ManageProducts() {
             </div>
             <div>
               <label className={labelClass} htmlFor="pf-price10">
-                Price 10mL
+                Price B (shown as "10 mL" unless a custom size label was set via a data sync)
               </label>
               <input
                 id="pf-price10"
@@ -275,8 +275,8 @@ export function ManageProducts() {
                 <th className={th}>Product</th>
                 <th className={th}>Category</th>
                 <th className={th}>Concentration</th>
-                <th className={th}>5mL</th>
-                <th className={th}>10mL</th>
+                <th className={th}>Price A</th>
+                <th className={th}>Price B</th>
                 <th className={th}>Status</th>
                 <th className={th} />
               </tr>
@@ -289,8 +289,18 @@ export function ManageProducts() {
                     <td className={td}>{p.name}</td>
                     <td className={td}>{p.category}</td>
                     <td className={tdMono}>{p.concentration}</td>
-                    <td className={tdMono}>{p.price_5ml == null ? '—' : `$${p.price_5ml}`}</td>
-                    <td className={tdMono}>{p.price_10ml == null ? '—' : `$${p.price_10ml}`}</td>
+                    <td className={tdMono}>
+                      {p.price_5ml == null ? '—' : `$${p.price_5ml}`}
+                      {p.price_5ml != null && (
+                        <div className="text-[var(--surface-ink-soft)]">{p.price_5ml_label ?? '5 mL'}</div>
+                      )}
+                    </td>
+                    <td className={tdMono}>
+                      {p.price_10ml == null ? '—' : `$${p.price_10ml}`}
+                      {p.price_10ml != null && (
+                        <div className="text-[var(--surface-ink-soft)]">{p.price_10ml_label ?? '10 mL'}</div>
+                      )}
+                    </td>
                     <td className={td}>
                       <Pill tone={p.status === 'current' ? 'current' : p.status === 'archived' ? 'open' : 'review'}>
                         {p.status.replace('_', ' ')}

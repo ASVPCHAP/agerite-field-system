@@ -2,7 +2,7 @@
 // mock store (src/data/store.ts) for a real Postgres/Supabase client later
 // is a data-source change, not a rebuild.
 
-export type ProductCategory = 'peptide' | 'weight-loss' | 'hormone' | 'topical' | 'troche'
+export type ProductCategory = 'peptide' | 'weight-loss' | 'hormone' | 'topical' | 'troche' | 'injection'
 export type ProductStatus = 'current' | 'pending_review' | 'archived'
 
 export interface Product {
@@ -11,7 +11,13 @@ export interface Product {
   category: ProductCategory
   concentration: string
   price_5ml: number | null
+  /** What price_5ml actually is — '5 mL' for the peptides that shape
+   *  fits, but AGErite's real catalog also prices per troche/capsule
+   *  count, per gram jar, or per dose-strength — null falls back to
+   *  '5 mL' client-side. See CRM_SPEC.md section 12. */
+  price_5ml_label: string | null
   price_10ml: number | null
+  price_10ml_label: string | null
   protocol_duration: string
   /** Internal-only guidance. Never shown on the public site. */
   rep_note: string | null

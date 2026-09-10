@@ -50,8 +50,8 @@ export function ProductReference() {
               <th className={th}>Product</th>
               <th className={th}>Category</th>
               <th className={th}>Concentration</th>
-              <th className={th}>5mL</th>
-              <th className={th}>10mL</th>
+              <th className={th}>Price A</th>
+              <th className={th}>Price B</th>
               <th className={th}>Protocol</th>
               <th className={th}>Status</th>
             </tr>
@@ -69,8 +69,18 @@ export function ProductReference() {
                 <td className={td}>{p.name}</td>
                 <td className={td}>{p.category}</td>
                 <td className={tdMono}>{p.concentration}</td>
-                <td className={tdMono}>{money(p.price_5ml)}</td>
-                <td className={tdMono}>{money(p.price_10ml)}</td>
+                <td className={tdMono}>
+                  {money(p.price_5ml)}
+                  {p.price_5ml != null && (
+                    <div className="text-[var(--surface-ink-soft)]">{p.price_5ml_label ?? '5 mL'}</div>
+                  )}
+                </td>
+                <td className={tdMono}>
+                  {money(p.price_10ml)}
+                  {p.price_10ml != null && (
+                    <div className="text-[var(--surface-ink-soft)]">{p.price_10ml_label ?? '10 mL'}</div>
+                  )}
+                </td>
                 <td className={td}>{p.protocol_duration}</td>
                 <td className={td}>
                   <Pill tone={p.under_review ? 'review' : 'current'}>

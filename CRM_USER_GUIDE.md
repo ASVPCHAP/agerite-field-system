@@ -99,13 +99,20 @@ question. This box doesn't show up for reps without leadership access.
 ## Resources: pricing, what we service, documents, and how to order
 
 **Resources** in the sidebar (not part of CRM, but you'll use it as
-much) has four tabs:
+much) has five tabs:
 
-- **Pricing & protocols** — the full price/concentration/protocol
-  table, same as before, with a Status pill so you can see at a glance
-  whether something's safe to quote or still pending PIC review.
-- **Service areas** — what AGErite can service grouped by category
-  (peptide therapy, weight loss, hormone therapy, topicals), for
+- **Pricing & protocols** — the real, current AGErite catalog (46
+  products across peptides, weight loss, hormones, topicals, troches,
+  and IV/injectable additives), straight from AGErite's own pricing
+  sheets. Each price has a small label under it saying what it's
+  actually for — "5 mL," "#30," "60 g," a specific dose strength —
+  since not everything AGErite sells prices the same way a peptide vial
+  does. A Status pill shows whether something's safe to quote or still
+  pending PIC review. A few products (GLP-1 weight-loss doses, some
+  hormone injectable strengths) show 1-2 representative prices with a
+  note pointing to the full pricing sheet in Printable Documents — the
+  real matrix has too many size/dose combinations to fit this table.
+- **Service areas** — what AGErite can service grouped by category, for
   answering "do you do X" without opening the pricing table.
 - **Printable documents** — real AGErite leave-behinds and clinical
   references (the peptide prescribing & price guide, hormones price
@@ -120,6 +127,12 @@ much) has four tabs:
   Tracker (log every clinic/med spa visit there — that's what drives
   your commission credit, separate from this portal's own activity
   log) and the AGErite website.
+- **Commission calculator** — type in a gross sales number for the
+  month and see exactly what you'd earn, broken down bracket by
+  bracket (6% up to $5k, 8% up to $15k, 10% up to $30k, 12% above
+  that) — same math as the official commission plan, just faster than
+  doing it by hand. It's an estimate for your own planning, not a
+  payroll record.
 
 **One thing to know about the old Provider/Clinic Tracker**: this
 portal's Pipeline already does that same job — first rep to log a

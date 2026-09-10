@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { Product, ProductCategory } from '../../data/schema'
 import { listRepProducts } from '../../data/store'
+import { calculateCommission } from '../../data/commission'
 import { Card, Note, Pill, SectionHeading, TableWrap, td, tdMono, th } from '../../components/ui'
 
 function money(n: number | null): string {
   return n == null ? '—' : `$${n}`
+}
+
+function dollars(n: number): string {
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 const CATEGORY_LABEL: Record<ProductCategory, string> = {
@@ -14,15 +19,17 @@ const CATEGORY_LABEL: Record<ProductCategory, string> = {
   hormone: 'Hormone therapy',
   topical: 'Topicals',
   troche: 'Troches',
+  injection: 'IV & injectable additives',
 }
 
-type Tab = 'pricing' | 'services' | 'documents' | 'forms'
+type Tab = 'pricing' | 'services' | 'documents' | 'forms' | 'commission'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pricing', label: 'Pricing & protocols' },
   { key: 'services', label: 'Service areas' },
   { key: 'documents', label: 'Printable documents' },
   { key: 'forms', label: 'Order & other forms' },
+  { key: 'commission', label: 'Commission calculator' },
 ]
 
 // Real leave-behinds/clinical references from AGErite (2026-09-10 drop).
@@ -115,6 +122,7 @@ const linkClass =
 export function Knowledge() {
   const [searchParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
+  const [grossSales, setGrossSales] = useState('')
   const [tab, setTab] = useState<Tab>(() => {
     const fromUrl = searchParams.get('tab')
     return TABS.some((t) => t.key === fromUrl) ? (fromUrl as Tab) : 'pricing'
@@ -133,6 +141,9 @@ export function Knowledge() {
     }
     return groups
   }, [products])
+
+  const salesNumber = Number(grossSales)
+  const commission = grossSales.trim() !== '' && !Number.isNaN(salesNumber) ? calculateCommission(salesNumber) : null
 
   return (
     <div>
@@ -171,8 +182,8 @@ export function Knowledge() {
                   <th className={th}>Product</th>
                   <th className={th}>Category</th>
                   <th className={th}>Concentration</th>
-                  <th className={th}>5mL</th>
-                  <th className={th}>10mL</th>
+                  <th className={th}>Price A</th>
+                  <th className={th}>Price B</th>
                   <th className={th}>Protocol</th>
                   <th className={th}>Status</th>
                   <th className={th}>Rep note</th>
@@ -186,8 +197,18 @@ export function Knowledge() {
                       <td className={td}>{p.name}</td>
                       <td className={td}>{CATEGORY_LABEL[p.category]}</td>
                       <td className={tdMono}>{p.concentration}</td>
-                      <td className={tdMono}>{money(p.price_5ml)}</td>
-                      <td className={tdMono}>{money(p.price_10ml)}</td>
+                      <td className={tdMono}>
+                        {money(p.price_5ml)}
+                        {p.price_5ml != null && (
+                          <div className="text-[var(--surface-ink-soft)]">{p.price_5ml_label ?? '5 mL'}</div>
+                        )}
+                      </td>
+                      <td className={tdMono}>
+                        {money(p.price_10ml)}
+                        {p.price_10ml != null && (
+                          <div className="text-[var(--surface-ink-soft)]">{p.price_10ml_label ?? '10 mL'}</div>
+                        )}
+                      </td>
                       <td className={td}>{p.protocol_duration}</td>
                       <td className={td}>
                         <Pill tone={pending ? 'review' : 'current'}>
@@ -288,6 +309,73 @@ export function Knowledge() {
               </Card>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === 'commission' && (
+        <div className="mt-6 max-w-xl">
+          <Note>
+            Graduated (bracket) commission on your monthly Gross Sales, per the 1099 Sales
+            Representative Commission Plan (GLP-1 & Wellness Program Outreach, effective
+            2026-07-14) — same idea as a tax bracket, only the portion of sales inside each tier
+            is paid at that tier's rate. Tiers reset every calendar month.
+          </Note>
+
+          <label className="mt-6 block font-mono text-xs text-[var(--surface-ink-soft)]">
+            Gross sales this month
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              placeholder="e.g. 22000"
+              value={grossSales}
+              onChange={(e) => setGrossSales(e.target.value)}
+              className="mt-1 block w-full rounded-sm border border-[var(--surface-line)] bg-transparent px-3 py-2 text-sm text-[var(--surface-ink)]"
+            />
+          </label>
+
+          {commission && commission.rows.length > 0 ? (
+            <TableWrap>
+              <table className="mt-4 w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className={th}>Bracket</th>
+                    <th className={th}>Rate</th>
+                    <th className={th}>Commission</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commission.rows.map((r) => (
+                    <tr key={r.label}>
+                      <td className={td}>{r.label}</td>
+                      <td className={tdMono}>{(r.rate * 100).toFixed(0)}%</td>
+                      <td className={tdMono}>{dollars(r.commission)}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td className={td}>
+                      <strong>Total commission</strong>
+                    </td>
+                    <td className={td} />
+                    <td className={tdMono}>
+                      <strong>{dollars(commission.total)}</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </TableWrap>
+          ) : (
+            <div className="mt-4">
+              <Note>Enter your gross sales for the month to see the breakdown.</Note>
+            </div>
+          )}
+
+          <p className="mt-4 text-xs text-[var(--surface-ink-soft)]">
+            Gross Sales = total cash-pay orders you're credited with, before refunds/returns.
+            Payments issue on or about the 7th of the following month. This is an estimate, not a
+            payroll record.
+          </p>
         </div>
       )}
     </div>
